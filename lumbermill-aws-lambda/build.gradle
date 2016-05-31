@@ -1,0 +1,22 @@
+apply plugin: 'java'
+
+dependencies {
+    compile (
+        project (':lumbermill-core'))
+    compile (
+        'com.amazonaws:aws-lambda-java-core:1.1.0',
+        'com.amazonaws:aws-lambda-java-events:1.1.0')
+    compile (
+        'ch.qos.logback:logback-core:1.1.7',
+        'ch.qos.logback:logback-classic:1.1.7')
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtime
+    }
+}
+
+build.dependsOn buildZip

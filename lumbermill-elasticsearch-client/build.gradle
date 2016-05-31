@@ -1,0 +1,11 @@
+
+
+dependencies {
+
+    compile project(':lumbermill-core')
+    compile 'com.squareup.okhttp:okhttp:2.5.0'
+    testCompile project(':lumbermill-http-server')
+
+}
+
+

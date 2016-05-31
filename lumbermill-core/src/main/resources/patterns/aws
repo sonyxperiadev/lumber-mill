@@ -1,0 +1,21 @@
+#
+# Copyright 2016 Sony Mobile Communications, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+#  http://aws.amazon.com/apache2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+#
+
+
+# Extracts duration, billed duration, memory and memory_ from a cloudwatch logs
+AWS_LAMBDA_REQUEST_REPORT REPORT RequestId: %{UUID}\tDuration: %{NUMBER:lambda_duration_ms:float} ms\tBilled Duration: %{NUMBER:lambda_billed_duration_ms:float} ms \tMemory Size: %{NUMBER:lambda_memory_size_mb:int} MB\tMax Memory Used: %{NUMBER:lambda_memory_used_mb:int}
+
+# ELB Log line. Does not yet cover all cases, there are some differences.
+AWS_ELB_LOG %{TIMESTAMP_ISO8601:timestamp} %{NOTSPACE:loadbalancer} %{IP:client_ip}:%{NUMBER:client_port:int} (?:%{IP:backend_ip}:%{NUMBER:backend_port:int}|-) %{NUMBER:request_processing_time:float} %{NUMBER:backend_processing_time:float} %{NUMBER:response_processing_time:float} %{NUMBER:elb_status_code:int} %{NUMBER:backend_status_code:int} %{NUMBER:received_bytes:int} %{NUMBER:sent_bytes:int} "(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})" %{QS:useragent}

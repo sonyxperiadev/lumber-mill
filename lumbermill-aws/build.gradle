@@ -1,0 +1,11 @@
+
+
+dependencies {
+
+    compile project(':lumbermill-elasticsearch-client')
+    compile "com.amazonaws:aws-java-sdk-sts:$awsVersion"
+    compile "com.amazonaws:aws-java-sdk-s3:$awsVersion"
+    compile "com.amazonaws:aws-java-sdk-kinesis:$awsVersion"
+}
+
+

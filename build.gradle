@@ -1,0 +1,32 @@
+
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'groovy'
+    apply plugin: 'maven'
+
+    group="com.sonymobile"
+    version="$lumberMillVersion"
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+
+    dependencies {
+        testCompile 'com.jayway.awaitility:awaitility:1.7.0'
+        testCompile 'junit:junit:4.12'
+        testCompile 'org.assertj:assertj-core:1.7.1'
+        testCompile 'org.mockito:mockito-core:1.9.5'
+        testCompile 'org.codehaus.groovy:groovy-test:2.4.6'
+        testCompile 'ch.qos.logback:logback-classic:1.1.6'
+        testCompile 'ch.qos.logback:logback-core:1.1.6'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}
