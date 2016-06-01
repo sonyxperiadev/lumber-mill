@@ -2,26 +2,26 @@
 
 *A facility where logs are cut into lumber*
 
+**Lumber Mill is under heavy development/refactoring so expect api changes to occur**
+
 **AWS Focused**
 Lumber Mill collects and processes logs similar to logstash but with focus on AWS sources like
 S3, Kinesis, Cloudwatch and possiblity to run as AWS Lambda.
 
-**Lumber Mill is under heavy development/refactoring so expect api changes to occur**
+**Code-As-Config**
+Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline and are written in groovy.
 
-
-## Lambda Cloudwatch Logs to Elasticsearch sample
+#### Lambda Cloudwatch Logs to AWS Elasticsearch sample
 
 ```groovy
 class CloudWatchLogsToKinesisEventProcessor implements EventProcessor {
 
     Observable<Event> call(Observable observable) {
-        observable
-        
-        .compose (
+        observable.compose (
             new CloudWatchLogsEventPreProcessor()
         )
         
-        // Custom grok or other enrich or filtering goes here
+        // Custom grok or other enrich should be done here
         
         .map ( addField('type','cloudwatchlogs'))
         .buffer (100)
@@ -30,7 +30,7 @@ class CloudWatchLogsToKinesisEventProcessor implements EventProcessor {
                 url:          'your_aws_elasticsearch_endpoint',
                 index_prefix: 'prefix-',
                 type:         '{type}',
-                region: 'eu-west-1' // Remove region if non AWS elasticsearch 
+                region: 'eu-west-1' 
             )
         )
     }
@@ -39,9 +39,9 @@ class CloudWatchLogsToKinesisEventProcessor implements EventProcessor {
 
 ```
 
-## Lambda S3 -> Kinesis sample
+#### Lambda S3 -> Kinesis sample
 
-Complete sample showing how to download file from S3 and store in Kinesis.
+Complete sample showing how to download file from S3 and written to Kinesis.
 
 ```groovy
 class MoveFromS3ToKinesisLambdaEventProcessor implements EventProcessor {
@@ -53,20 +53,6 @@ class MoveFromS3ToKinesisLambdaEventProcessor implements EventProcessor {
                 bucket: '{bucket_name}',
                 key: '{key}',
                 remove: true
-            )
-        )
-
-       .flatMap (
-            gzip.compress (
-                file: '{s3_download_path}'
-            )
-        )
-
-       .flatMap (
-            s3.put (
-                bucket: '{bucket_name}',
-                key: 'processed/{key}.gz',
-                file: '{gzip_path_compressed}'
             )
         )
         
@@ -91,7 +77,7 @@ class MoveFromS3ToKinesisLambdaEventProcessor implements EventProcessor {
         .map (
             addField ('type', 'elb')
         )
-        .buffer(300)
+        .buffer(500)
         .flatMap (
             kinesis.bufferedProducer (
                 stream:          'your_kinesis_stream_name'
@@ -104,12 +90,11 @@ class MoveFromS3ToKinesisLambdaEventProcessor implements EventProcessor {
 
 ```
 ## Background
-The project started after struggling to make logstash do **exactly** what we wanted to do on AWS and
+The project started after struggling to make Logstash do **exactly** what we wanted to do on AWS and
 Lumber Mill is the third generation of this project that we decided to open source. We have been running
 earlier versions in production for more than a year.
 
 ## Features
-We have chosen to limit our first version to the following functionality
 
 * AWS Lambda events from Kinesis, S3 & Cloudwatch Logs
 * S3 Get / Put / Delete
@@ -119,3 +104,7 @@ We have chosen to limit our first version to the following functionality
 * Grok, Gzip, Zlib, Base64, Simple if/then logic
 * Pattern extraction of values from events
 * Experimental http server (experimenting and unit tests sofar)
+
+## Samples
+
+We are finishing samples right now, will be available in this repo or another repo.
