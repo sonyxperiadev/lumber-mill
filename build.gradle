@@ -1,9 +1,11 @@
 
+
 subprojects {
 
     apply plugin: 'java'
     apply plugin: 'groovy'
     apply plugin: 'maven'
+    apply plugin: 'signing'
 
     group="com.sonymobile"
     version="$lumberMillVersion"
@@ -24,6 +26,68 @@ subprojects {
         testCompile 'org.codehaus.groovy:groovy-test:2.4.6'
         testCompile 'ch.qos.logback:logback-classic:1.1.6'
         testCompile 'ch.qos.logback:logback-core:1.1.6'
+    }
+
+    task javadocJar(type: Jar) {
+        classifier = 'javadoc'
+        from javadoc
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives javadocJar, sourcesJar
+    }
+
+    signing {
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                }
+
+                pom.project {
+                    name 'Lumber Mill'
+                    packaging 'jar'
+                    description 'Where Logs are cut into Lumber'
+                    url 'https://github.com/sonyxperiadev/lumber-mill'
+
+                    scm {
+                        connection 'scm:git:https://github.com/sonyxperiadev/lumber-mill'
+                        developerConnection 'scm:git:git@github.com/sonyxperiadev/lumber-mill.git'
+                        url 'http://foo.googlecode.com/svn/trunk/'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'jrask'
+                            name 'Johan Rask'
+                            email 'johan.rask@sonymobile.com'
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

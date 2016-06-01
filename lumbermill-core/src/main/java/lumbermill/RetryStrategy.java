@@ -9,11 +9,11 @@ import java.util.Map;
  * <p>Used to create retry strategies when using with Observable.retryWhen()</p>
  * It is designed to help you with the most common and simple uses cases regarding retries,
  * not with everything.
- *<br/><br/>
+ *<br><br>
  * Great resources for more about retry-with that is useful
- * <br/>
+ * <br>
  * https://gist.github.com/daschl/db9fcc9d2b932115b679#retry-with-delay
- * <br/>
+ * <br>
  * http://blog.danlew.net/2016/01/25/rxjavas-repeatwhen-and-retrywhen-explained/
  */
 
@@ -43,7 +43,7 @@ public interface RetryStrategy {
      * }
      * </pre>
      *
-     * @param java.util.Map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
+     * @param map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
      */
     Func1<Observable<? extends Throwable>, Observable<?>> withLinearDelay(Map map);
 
@@ -63,7 +63,7 @@ public interface RetryStrategy {
      * }
      * </pre>
      *
-     * @param java.util.Map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
+     * @param map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
      */
     Func1<Observable<? extends Throwable>, Observable<?>> withFixedDelay(Map map);
 
@@ -91,7 +91,7 @@ public interface RetryStrategy {
      * }
      * </pre>
      *
-     * @param java.util.Map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
+     * @param map with optional 'attempts' (default = 3) and 'delay' (default = 1000)
      */
     Func1<Observable<? extends Throwable>, Observable<?>> withExponentialDelay(Map map);
     

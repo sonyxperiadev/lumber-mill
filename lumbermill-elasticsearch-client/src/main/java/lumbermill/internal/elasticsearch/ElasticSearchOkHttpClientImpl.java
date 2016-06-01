@@ -64,7 +64,7 @@ import static java.util.stream.Collectors.toList;
  *    new ElasticSearchOkHttpClient("http://host:port", "lumbermill-", "atype", true);
  *</code></pre>
  * No index prefix:
- * <pre><code></code>
+ * <pre><code>
  *    new ElasticSearchOkHttpClient("http://host:port", "lumbermill", "atype", false);
  * </code></pre>
  *
