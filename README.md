@@ -39,7 +39,7 @@ class CloudWatchLogsToKinesisEventProcessor implements EventProcessor {
 
 ```
 
-#### Lambda S3 -> Kinesis sample
+#### Lambda S3 -> Kinesis Sample
 
 Complete sample showing how to download file from S3 and written to Kinesis.
 
