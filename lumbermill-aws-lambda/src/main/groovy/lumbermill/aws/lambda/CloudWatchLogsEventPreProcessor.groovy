@@ -28,17 +28,11 @@ import static lumbermill.Core.*
  * from Cloud Watch Logs.
  *
  */
-
-/*
- */
 @SuppressWarnings("unused")
 class CloudWatchLogsEventPreProcessor implements EventProcessor {
 
-
-
     Observable<Event> call(Observable observable) {
         // Read the actual data from json
-        observable.doOnNext(console.stdout())
         observable.map (
             { JsonEvent jsonEvent ->
                 return Codecs.BYTES.from (

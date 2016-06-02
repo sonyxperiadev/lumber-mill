@@ -38,6 +38,9 @@ public abstract class CloudWatchLogsLambda implements RequestHandler<Map<String,
 
     @Override
     public String handleRequest(Map<String, Map<String, String>> event, Context context) {
+        if (eventProcessor instanceof LambdaContextAwareEventProcessor) {
+            ((LambdaContextAwareEventProcessor)eventProcessor).initialize(context);
+        }
         Observable.just(event)
                 .map(this::toEvent)
                 .compose(eventProcessor)

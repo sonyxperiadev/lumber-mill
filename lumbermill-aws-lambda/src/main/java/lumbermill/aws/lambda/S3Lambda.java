@@ -38,6 +38,9 @@ public abstract class S3Lambda implements RequestHandler<S3Event, String> {
 
     @Override
     public String handleRequest(S3Event s3, Context context) {
+        if (eventProcessor instanceof LambdaContextAwareEventProcessor) {
+            ((LambdaContextAwareEventProcessor)eventProcessor).initialize(context);
+        }
         try {
             Observable.from(s3.getRecords())
                     .map(this::toJson)

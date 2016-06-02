@@ -17,13 +17,10 @@ package lumbermill.aws.lambda;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
-import lumbermill.Core;
 import lumbermill.api.BytesEvent;
 import lumbermill.api.Codecs;
 import lumbermill.api.EventProcessor;
 import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Action1;
 
 
 /**
@@ -40,7 +37,9 @@ public abstract class KinesisLambda implements RequestHandler<KinesisEvent, Stri
 
     @Override
     public String handleRequest(KinesisEvent event, Context context) {
-
+        if (eventProcessor instanceof LambdaContextAwareEventProcessor) {
+            ((LambdaContextAwareEventProcessor)eventProcessor).initialize(context);
+        }
         Observable.from(event.getRecords())
                 .map(this::toBytes)
                 .compose(eventProcessor)
