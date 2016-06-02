@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sonyxperiadev/lumber-mill.svg?branch=master)](https://travis-ci.org/sonyxperiadev/lumber-mill)
+
 # Lumber Mill
 
 *A facility where logs are cut into lumber*
