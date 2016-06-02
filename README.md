@@ -105,6 +105,14 @@ earlier versions in production for more than a year.
 * Pattern extraction of values from events
 * Experimental http server (experimenting and unit tests sofar)
 
+## Build
+
+    ./gradlew clean build
+    
+## Binaries
+
+Will be available on maven central shortly
+
 ## Samples
 
 We are finishing samples right now, will be available in this repo or another repo.
