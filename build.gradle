@@ -66,9 +66,9 @@ subprojects {
                     url 'https://github.com/sonyxperiadev/lumber-mill'
 
                     scm {
-                        connection 'scm:git:https://github.com/sonyxperiadev/lumber-mill'
-                        developerConnection 'scm:git:git@github.com/sonyxperiadev/lumber-mill.git'
-                        url 'http://foo.googlecode.com/svn/trunk/'
+                        connection 'scm:git:git@github.com:sonyxperiadev/lumber-mill.git'
+                        developerConnection 'scm:git:git@github.com:sonyxperiadev/lumber-mill.git'
+                        url 'git@github.com:sonyxperiadev/lumber-mill.git'
                     }
 
                     licenses {
@@ -83,6 +83,8 @@ subprojects {
                             id 'jrask'
                             name 'Johan Rask'
                             email 'johan.rask@sonymobile.com'
+                            organization 'Sony Mobile Communications, Inc'
+                            organizationUrl 'https://github.com/sonyxperiadev'
                         }
                     }
                 }
