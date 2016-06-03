@@ -3,8 +3,4 @@ include 'lumbermill-core',
     'lumbermill-http-server',
     'lumbermill-elasticsearch-client',
     'lumbermill-aws',
-    'lumbermill-aws-lambda',
-    'lumbermill-samples/simple-samples',
-    'lumbermill-samples/s3-kinesis-lambda',
-    'lumbermill-samples/kinesis-elasticsearch-lambda',
-    'lumbermill-samples/cloudwatch-kinesis-lambda'
+    'lumbermill-aws-lambda'
