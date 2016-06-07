@@ -112,7 +112,18 @@ earlier versions in production for more than a year.
     
 ## Binaries
 
-Will be available on maven central shortly
+Maven
+
+    <dependency>
+          <groupId>com.sonymobile</groupId>
+          <artifactId>lumbermill-aws-lambda</artifactId>
+          <version>0.0.9</version>
+    </dependency>
+
+Gradle
+
+    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.9'
+    
 
 ## Samples
 
