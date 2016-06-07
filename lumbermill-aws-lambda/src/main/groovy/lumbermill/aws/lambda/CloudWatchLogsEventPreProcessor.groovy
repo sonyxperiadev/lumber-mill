@@ -33,27 +33,27 @@ class CloudWatchLogsEventPreProcessor implements EventProcessor {
 
     Observable<Event> call(Observable observable) {
         // Read the actual data from json
-        observable.map (
-            { JsonEvent jsonEvent ->
+        observable.map { JsonEvent jsonEvent ->
                 return Codecs.BYTES.from (
-                    jsonEvent.objectChild("awslogs").valueAsString("data"))}
-        )
-
+                    jsonEvent.objectChild("awslogs").valueAsString("data"))
+        }
         .map ( base64.decode())
         .map ( gzip.decompress())
         .map ( toJsonObject())
-        .flatMap({JsonEvent event ->
+
+        .flatMap { JsonEvent event ->
 
             // Denormalize, add logGroup and logStream to each event
             def logGroup = event.valueAsString('logGroup')
             def logStream = event.valueAsString('logStream')
             event.child('logEvents')
                 .each()
-                .map({JsonEvent jsonEvent ->
+                .map { JsonEvent jsonEvent ->
                     jsonEvent.put('logGroup',logGroup)
-                        .put('logStream',logStream)})
-        })
+                        .put('logStream',logStream)
+            }
+        }
         .map ( timestampFromMs('timestamp'))
-        .onExceptionResumeNext()
+        .map ( remove('timestamp'))
     }
 }
