@@ -127,4 +127,4 @@ Gradle
 
 ## Samples
 
-We are finishing samples right now, will be available in this repo or another repo.
+Samples are found in <https://github.com/sonyxperiadev/lumber-mill-samples> repository
