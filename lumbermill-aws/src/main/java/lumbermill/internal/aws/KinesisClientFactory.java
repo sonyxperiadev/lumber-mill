@@ -24,7 +24,12 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lumbermill.internal.MapWrap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +39,8 @@ import java.util.concurrent.Executors;
  *  Manages a KinesisProducer per stream to make configuration simpler.
  */
 public class KinesisClientFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(KinesisClientFactory.class);
 
     private static final String DEFAULT_PARTITION_KEY = "default";
 
@@ -62,11 +69,16 @@ public class KinesisClientFactory {
 
         }
 
-        return createClient(new ClientConfiguration()
-                .withProxyHost("localhost")
-                .withProxyPort(3128)
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withMaxConnections(configuration.get("max_connections", 10))
-                .withRequestTimeout(configuration.get("request_timeout", 60000)), configuration);
+                .withRequestTimeout(configuration.get("request_timeout", 60000));
+        if (System.getenv("https_proxy") != null) {
+            URI proxy = URI.create(System.getenv("https_proxy"));
+            LOGGER.info("Using proxy {}", proxy);
+            clientConfiguration.withProxyHost(proxy.getHost())
+                    .withProxyPort(proxy.getPort());
+        }
+        return createClient(clientConfiguration, configuration);
     }
 
     private AWSCredentialsProvider getAwsCredentialsProvider(MapWrap configuration, ClientConfiguration awsConfig) {

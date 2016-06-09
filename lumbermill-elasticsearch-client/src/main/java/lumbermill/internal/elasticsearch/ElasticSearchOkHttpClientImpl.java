@@ -91,9 +91,9 @@ public class ElasticSearchOkHttpClientImpl {
         if (System.getenv("https_proxy") != null) {
             URI proxy = URI.create(System.getenv("https_proxy"));
             LOGGER.info("Using proxy {}", proxy);
-           // client.setProxy (
-           //         new Proxy(Proxy.Type.HTTP,
-           //                 new InetSocketAddress(proxy.getHost(), proxy.getPort())));
+            client.setProxy (
+                    new Proxy(Proxy.Type.HTTP,
+                            new InetSocketAddress(proxy.getHost(), proxy.getPort())));
         }
         client.setRetryOnConnectionFailure(true);
     }
