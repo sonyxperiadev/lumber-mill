@@ -63,6 +63,8 @@ public class KinesisClientFactory {
         }
 
         return createClient(new ClientConfiguration()
+                .withProxyHost("localhost")
+                .withProxyPort(3128)
                 .withMaxConnections(configuration.get("max_connections", 10))
                 .withRequestTimeout(configuration.get("request_timeout", 60000)), configuration);
     }

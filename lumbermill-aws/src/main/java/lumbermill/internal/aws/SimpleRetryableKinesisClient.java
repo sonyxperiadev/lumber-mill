@@ -104,20 +104,28 @@ public class SimpleRetryableKinesisClient<T extends Event> {
 
             @Override
             public void onSuccess(PutRecordsRequest putRecordsRequest, PutRecordsResult putRecordsResult) {
-                if (putRecordsResult.getFailedRecordCount() > 0) {
-                    LOGGER.debug("Got {} failed records, retrying (attempts = {})",
-                            putRecordsResult.getFailedRecordCount(), request.attempt);
-                    // Try again with failing records,
-                    // if no more attempts an exception will be thrown but we do not bother catching it for now
-                    putRecordsAsync(request.nextAttempt(putRecordsResult));
-                } else {
-                    request.done();
+                // Surround with try/catch to prevent any unexpected exceptions from beeing swallowed
+                try {
+                    if (putRecordsResult.getFailedRecordCount() > 0) {
+                        LOGGER.debug("Got {} failed records, retrying (attempts = {})",
+                                putRecordsResult.getFailedRecordCount(), request.attempt);
+                        // Try again with failing records,
+                        Optional<RequestContext> nextAttempt = request.nextAttempt(putRecordsResult);
+                        if (nextAttempt.isPresent()) {
+                            putRecordsAsync(nextAttempt.get());
+                        } else {
+                            request.error(new FatalAWSException("Too many kinesis retries"));
+                        }
+                    } else {
+                        request.done();
+                    }
+                } catch (Throwable t) {
+                    LOGGER.error("Unexpected exception in onSuccess()", t);
+                    request.error(t);
                 }
             }
         });
-
     }
-
 
     /**
      * Converts event to actual kinesis entry type
@@ -127,7 +135,9 @@ public class SimpleRetryableKinesisClient<T extends Event> {
         return new PutRecordsRequestEntry().withData (
                 event.raw().asByteBuffer())
                 // FIXME: If partitionkey does not return a value, what approach is best?
-                .withPartitionKey(partitionKey.isPresent() ? partitionKey.get() : UUID.randomUUID().toString());
+                .withPartitionKey(partitionKey.isPresent()
+                        ? partitionKey.get()
+                        : UUID.randomUUID().toString());
     }
 
 
@@ -136,9 +146,9 @@ public class SimpleRetryableKinesisClient<T extends Event> {
      */
     private static class RequestContext<E extends Event> {
 
-        private static final int MAX = 20; // hmm... fingers crossed.
+        private static final int MAX = 20; // Temporary until proper retry strategy
 
-        public final ReplaySubject<List<E>> subject = ReplaySubject.createWithSize(1);;
+        public final ReplaySubject<List<E>> subject = ReplaySubject.createWithSize(1);
 
         /**
          * Keep them here until we are done, then return them
@@ -160,29 +170,39 @@ public class SimpleRetryableKinesisClient<T extends Event> {
             this.putRecordsRequest = putRecordsRequest;
         }
 
-        public boolean hasNextAttempt() {
+        private boolean hasNextAttempt() {
             return attempt.get() > MAX ? false : true;
         }
 
 
-        public RequestContext nextAttempt(PutRecordsResult result) {
-            this.putRecordsRequest = failedRecords(result);
+        /**
+         * Based on non successful records, returns a RequestContext with a correct PutRecordsRequest
+         *
+         * @param result is the last result returned from Kinesis
+         * @return RequestContext IF there are more attempts, Optional.empty() otherwise
+         */
+        public Optional<RequestContext> nextAttempt(PutRecordsResult result) {
             this.attempt.incrementAndGet();
             if (!hasNextAttempt()) {
-                FatalAWSException ex = new FatalAWSException("Too many kinesis retries");
-                ex.printStackTrace();
-                error(ex);
-                throw ex;
+                return Optional.empty();
             }
-            // Wait a few ms until we try again
+            this.putRecordsRequest = failedRecords(result);
+
+            // TODO - Implement retry strategy properly
             try {
                 Thread.sleep(500); // To high? Configurable?
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            return this;
+            return Optional.of(this);
         }
 
+        /**
+         * Based on the request and the result, returns a new request
+         * containing the records that failed.
+         * @param result is the last PutRecordsResult
+         * @return a new PutRecordsRequest with failing records
+         */
         private PutRecordsRequest failedRecords(PutRecordsResult result) {
             List<PutRecordsRequestEntry> newRecords = new ArrayList<>();
             List<PutRecordsResultEntry> records = result.getRecords();
@@ -196,12 +216,21 @@ public class SimpleRetryableKinesisClient<T extends Event> {
                     .withStreamName(putRecordsRequest.getStreamName());
         }
 
+        /**
+         * Invoked after request is successful and there are no failing records.
+         */
         public void done() {
-            LOGGER.debug("Done() free {}, max {}", Runtime.getRuntime().freeMemory(), Runtime.getRuntime().maxMemory());
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("Done() mem free {}, mem max {}", Runtime.getRuntime().freeMemory(), Runtime.getRuntime().maxMemory());
+            }
             this.subject.onNext(events);
             this.subject.onCompleted();
         }
 
+        /**
+         * Invoked if an error occurs of there are no more retries
+         * @param t is the original exception
+         */
         public void error(Throwable t) {
             this.subject.onError(t);
         }
