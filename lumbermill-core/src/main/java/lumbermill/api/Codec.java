@@ -25,5 +25,5 @@ public interface Codec<T extends Event> {
     T from(ByteString b);
     T from(byte[] b);
     T from(String s);
-
+    T from(Event event);
 }

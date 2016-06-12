@@ -329,14 +329,14 @@ public class Core {
      * which type it is.
      */
     public static <E extends Event> Func1<E, AnyJsonEvent> json() {
-        return e -> Codecs.JSON_ANY.from(e.raw());
+        return e -> Codecs.JSON_ANY.from(e);
     }
 
     /**
      * Decodes the event into a json object, use this if your events are json.
      */
     public static <E extends Event> Func1<E, JsonEvent> toJsonObject() {
-        return e -> Codecs.JSON_OBJECT.from(e.raw());
+        return e -> Codecs.JSON_OBJECT.from(e);
     }
 
     /**
@@ -354,7 +354,7 @@ public class Core {
      * </pre>
      */
     public static <E extends Event> Func1<E, JsonEvent> textToJson() {
-        return e -> Codecs.TEXT_TO_JSON.from(e.raw());
+        return e -> Codecs.TEXT_TO_JSON.from(e);
     }
 
 

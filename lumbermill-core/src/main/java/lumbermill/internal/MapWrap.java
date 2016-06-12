@@ -75,6 +75,11 @@ public final class MapWrap {
         return Double.parseDouble(field);
     }
 
+    public MapWrap putAll(MapWrap mapWrap) {
+        this.config.putAll(mapWrap.config);
+        return this;
+    }
+
     public MapWrap put(String key, Object value) {
         this.config.put(key, value);
         return this;

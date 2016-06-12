@@ -60,20 +60,16 @@ public class Codecs {
 
 
     private static Codec<AnyJsonEvent> json() {
-       return new Codec<AnyJsonEvent>() {
+       return new AbstractCodec<AnyJsonEvent>() {
            @Override
            public AnyJsonEvent from(ByteString b) {
                return jsonArray(b);
            }
 
            @Override
-           public AnyJsonEvent from(byte[] b) {
-               return jsonArray(ByteString.of(b));
-           }
-
-           @Override
-           public AnyJsonEvent from(String s) {
-               return jsonArray(ByteString.encodeUtf8(s));
+           public AnyJsonEvent from(Event event) {
+               return from(event.raw())
+                       .withMetaData(event);
            }
 
            @Override
@@ -84,20 +80,15 @@ public class Codecs {
     }
 
     private static Codec<JsonEvent> jsonObject() {
-        return new Codec<JsonEvent>() {
+        return new AbstractCodec<JsonEvent>() {
             @Override
             public JsonEvent from(ByteString b) {
                 return json(b);
             }
 
             @Override
-            public JsonEvent from(byte[] b) {
-                return json(ByteString.of(b));
-            }
-
-            @Override
-            public JsonEvent from(String s) {
-                return json(ByteString.encodeUtf8(s));
+            public JsonEvent from(Event event) {
+                return from(event.raw()).withMetaData(event);
             }
 
             @Override
@@ -108,20 +99,15 @@ public class Codecs {
     }
 
     private static Codec<JsonEvent> textToJson() {
-        return new Codec<JsonEvent>() {
+        return new AbstractCodec<JsonEvent>() {
             @Override
             public JsonEvent from(ByteString b) {
                 return raw(b);
             }
 
             @Override
-            public JsonEvent from(byte[] b) {
-                return raw(ByteString.of(b));
-            }
-
-            @Override
-            public JsonEvent from(String s) {
-                return raw(ByteString.encodeUtf8(s));
+            public JsonEvent from(Event event) {
+                return from(event.raw()).withMetaData(event);
             }
 
             @Override
@@ -132,20 +118,15 @@ public class Codecs {
     }
 
     private static Codec<BytesEvent> bytes() {
-        return new Codec<BytesEvent>() {
+        return new AbstractCodec<BytesEvent>() {
             @Override
             public BytesEvent from(ByteString b) {
                 return new BytesEvent(b);
             }
 
             @Override
-            public BytesEvent from(byte[] b) {
-                return new BytesEvent(ByteString.of(b));
-            }
-
-            @Override
-            public BytesEvent from(String s) {
-                return new BytesEvent(ByteString.encodeUtf8(s));
+            public BytesEvent from(Event event) {
+                return from(event.raw()).withMetaData(event);
             }
 
             @Override

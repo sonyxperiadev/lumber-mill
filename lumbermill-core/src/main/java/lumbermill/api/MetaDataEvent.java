@@ -65,5 +65,13 @@ public abstract class MetaDataEvent implements Event {
         List<String> tagss = map.get("tags");
         tagss.addAll(tags);
     }
+
+    public <T> T withMetaData(Event mde) {
+        if (mde instanceof MetaDataEvent) {
+            MetaDataEvent e = (MetaDataEvent)mde;
+            this.map.putAll(e.map);
+        }
+        return (T) this;
+    }
 }
 

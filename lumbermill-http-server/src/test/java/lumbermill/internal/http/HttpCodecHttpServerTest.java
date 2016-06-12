@@ -15,6 +15,7 @@
 package lumbermill.internal.http;
 
 
+import lumbermill.api.JsonEvent;
 import lumbermill.http.AbstractHttpHandler;
 import okio.ByteString;
 import org.junit.Before;
@@ -65,14 +66,14 @@ public class HttpCodecHttpServerTest extends AbstractHttpServerTest {
         await().atMost(1, TimeUnit.SECONDS).until(subscriber().onCompletedInvoked());
     }
 
-    static class TextToJsonHttpHandler extends AbstractHttpHandler {
+    static class TextToJsonHttpHandler extends AbstractHttpHandler<JsonEvent, JsonEvent> {
 
         public static Supplier<TextToJsonHttpHandler> supplier() {
             return () -> new TextToJsonHttpHandler();
         }
 
         @Override
-        public Event doParse(HttpPostRequest request) throws HttpCodecException {
+        public JsonEvent doParse(HttpPostRequest request) throws HttpCodecException {
             //request.response().write("hello").setStatusCode(200);
             return from(request.message());
         }
@@ -83,18 +84,23 @@ public class HttpCodecHttpServerTest extends AbstractHttpServerTest {
         }
 
         @Override
-        public Event from(ByteString b) {
+        public JsonEvent from(ByteString b) {
             return Codecs.TEXT_TO_JSON.from(b);
         }
 
         @Override
-        public Event from(byte[] b) {
+        public JsonEvent from(byte[] b) {
             return Codecs.TEXT_TO_JSON.from(b);
         }
 
         @Override
-        public Event from(String s) {
+        public JsonEvent from(String s) {
             return null;
+        }
+
+        @Override
+        public JsonEvent from(Event event) {
+            return from(event.raw()).withMetaData(event);
         }
     }
 

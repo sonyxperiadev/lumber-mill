@@ -77,14 +77,14 @@ class GZip {
     public  <T extends Event>Func1<T,T> compress() {
         return t -> {
             LOGGER.debug("Compressing event");
-            return  (T) Codecs.BYTES.from(Streams.gzip(t.raw()));
+            return  (T) Codecs.BYTES.from(Streams.gzip(t.raw())).withMetaData(t);
         };
     }
 
     public  <T extends Event>Func1<T,T> decompress() {
         return t -> {
             LOGGER.debug("decompressing event");
-            return (T) Codecs.BYTES.from(Streams.gunzip(t.raw()));
+            return (T) Codecs.BYTES.from(Streams.gunzip(t.raw())).withMetaData(t);
         };
     }
 }
