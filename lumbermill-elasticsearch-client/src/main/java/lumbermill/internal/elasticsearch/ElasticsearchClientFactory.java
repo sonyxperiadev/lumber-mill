@@ -18,23 +18,31 @@ import lumbermill.internal.MapWrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class ElasticsearchClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientFactory.class);
 
+    private final Map<String, ElasticSearchOkHttpClientImpl> cachedClients = new HashMap<>();
+
     public synchronized ElasticSearchOkHttpClientImpl ofParameters(MapWrap config) {
         config.assertExists("url", "type")
                 .assertExistsAny("index", "index_prefix");
-
         return createClient(config);
+    }
+
+    private String cacheKey(String url, String index, boolean isPrefix) {
+        return new StringBuilder().append(url).append(index).append(isPrefix).toString();
     }
 
     private ElasticSearchOkHttpClientImpl createClient(MapWrap config) {
 
-        LOGGER.trace("Creating new Elasticsearch client");
         boolean isPrefix;
         String index;
+        String url = config.asString("url");
         if (config.exists("index_prefix")) {
             isPrefix = true;
             index = config.asString("index_prefix");
@@ -43,8 +51,14 @@ public class ElasticsearchClientFactory {
             index = config.asString("index");
         }
 
+        String cacheKey = cacheKey(url, index, isPrefix);
+        if (cachedClients.containsKey(cacheKey)) {
+            LOGGER.trace("Using cached Elasticsearch client");
+            return cachedClients.get(cacheKey);
+        }
+        LOGGER.trace("Creating new Elasticsearch client");
         final ElasticSearchOkHttpClientImpl es = new ElasticSearchOkHttpClientImpl (
-                config.asString("url"),
+                url,
                 index,
                 config.asString("type"),
                 isPrefix);
@@ -56,6 +70,8 @@ public class ElasticsearchClientFactory {
         if (config.exists("timestamp_field")) {
             es.withTimestampField(config.asString("timestamp_field"));
         }
+        cachedClients.put(cacheKey, es);
+
         return es;
     }
 }
