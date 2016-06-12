@@ -176,26 +176,6 @@ public class ElasticSearchOkHttpClientImpl {
         }
 
         doOkHttpPost(request);
-            /*
-            handleResponse(request, response);
-
-            if (LOGGER.isTraceEnabled()) {
-                try {
-                    LOGGER.trace("Successful elasticsearch response: {}, code {}", response.body().string(), response.code());
-                } catch (IOException e) {
-                    LOGGER.warn("Failed to extract body from response", e.getMessage());
-                }
-            }
-
-            success(request, response);
-
-        } catch (SocketTimeoutException e) {
-            throw new IndexFailedException(e);
-        } catch (IOException e) {
-            throw new IndexFailedException(e);
-        } catch (RuntimeException e) {
-            throw new IndexFailedException(e);
-        }*/
     }
 
     /**
@@ -259,18 +239,20 @@ public class ElasticSearchOkHttpClientImpl {
 
         Optional<String> formattedType = type.format(event);
         if (!formattedType.isPresent()) {
-            throw new IllegalStateException("Invalid value for type " + type.original());
+            throw new IllegalStateException("Issue with type, could not extract field from event "
+                    + type.original());
+        }
+
+        Optional<String> formattedIndex = index.format(event);
+        if (!formattedIndex.isPresent()) {
+            throw new IllegalStateException("Issue with index, could not extract field from event: "
+                    + index.original());
         }
 
         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
         ObjectNode data = OBJECT_MAPPER.createObjectNode();
 
         // Prepare for adding day to index for each event
-        Optional<String> formattedIndex = index.format(event);
-        if (!formattedIndex.isPresent()) {
-            throw new IllegalStateException("Issue with index, could not extract field from event: "
-                    + index.original());
-        }
         if (indexIsPrefix) {
             LocalDate indexDate;
             // TODO: Not sure how to handle this... what should be the behaviour if the specified timestamp field
@@ -282,9 +264,9 @@ public class ElasticSearchOkHttpClientImpl {
                 indexDate = LocalDate.now();
             }
             data.put("_index",
-                    formattedType.get() + indexDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")));
+                    formattedIndex.get() + indexDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")));
         } else {
-            data.put("_index", formattedType.get());
+            data.put("_index", formattedIndex.get());
         }
         data.put("_type", formattedType.get());
         objectNode.set("index", data);
