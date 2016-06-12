@@ -31,6 +31,7 @@ import lumbermill.elasticsearch.FatalIndexException;
 import lumbermill.elasticsearch.IndexFailedException;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.StringTemplate;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -88,8 +89,10 @@ public class ElasticSearchOkHttpClientImpl {
     private final static OkHttpClient client = new OkHttpClient();
 
     static {
-        if (System.getenv("https_proxy") != null) {
-            URI proxy = URI.create(System.getenv("https_proxy"));
+        String https_proxy = System.getenv("https_proxy");
+        // Support for empty value as well as null
+        if (StringUtils.isNotEmpty(https_proxy)) {
+            URI proxy = URI.create(https_proxy);
             LOGGER.info("Using proxy {}", proxy);
             client.setProxy (
                     new Proxy(Proxy.Type.HTTP,
@@ -103,7 +106,7 @@ public class ElasticSearchOkHttpClientImpl {
     private String timestampField = "@timestamp";
 
     private final URL url;
-    private final String index;
+    private final StringTemplate index;
     private final StringTemplate type;
 
     private Optional<RequestSigner> signer = Optional.empty();
@@ -116,8 +119,8 @@ public class ElasticSearchOkHttpClientImpl {
             throw new IllegalStateException(e);
         }
 
-        this.index = index;
-        this.type = StringTemplate.compile(type);
+        this.index = StringTemplate.compile(index);
+        this.type  = StringTemplate.compile(type);
     }
 
 
@@ -263,6 +266,11 @@ public class ElasticSearchOkHttpClientImpl {
         ObjectNode data = OBJECT_MAPPER.createObjectNode();
 
         // Prepare for adding day to index for each event
+        Optional<String> formattedIndex = index.format(event);
+        if (!formattedIndex.isPresent()) {
+            throw new IllegalStateException("Issue with index, could not extract field from event: "
+                    + index.original());
+        }
         if (indexIsPrefix) {
             LocalDate indexDate;
             // TODO: Not sure how to handle this... what should be the behaviour if the specified timestamp field
@@ -274,9 +282,9 @@ public class ElasticSearchOkHttpClientImpl {
                 indexDate = LocalDate.now();
             }
             data.put("_index",
-                    index + indexDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")));
+                    formattedType.get() + indexDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")));
         } else {
-            data.put("_index", index);
+            data.put("_index", formattedType.get());
         }
         data.put("_type", formattedType.get());
         objectNode.set("index", data);
