@@ -51,7 +51,6 @@ public class ElasticSearchBulkResponse {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-
     }
 
     public boolean hasErrors() {
@@ -63,7 +62,15 @@ public class ElasticSearchBulkResponse {
         ArrayNode array = (ArrayNode)responseContents.get("items");
         int pos = 0;
         for (JsonNode node: array) {
-            int statusCode = node.get("create").get("status").asInt();
+            int statusCode;
+            if (node.has("create")) {
+                statusCode = node.get("create").get("status").asInt();
+             } else if (node.has("index")) {
+                // Issue #9 - AWS Elasticsearch returns "index" even if we send "create" for certain exceptions
+                statusCode = node.get("index").get("status").asInt();
+            } else {
+                throw new IllegalStateException("Could not find field create or index in response");
+            }
             eventWithResponse.put(request.original().get(pos), new JsonEvent((ObjectNode)node));
             if (statusCode != 200 && statusCode != 201 && statusCode != 202) {
                 // No idea to retry if BAD_REQUEST, just skip and log them
