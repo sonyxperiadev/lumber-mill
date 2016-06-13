@@ -63,6 +63,10 @@ public class ElasticsearchClientFactory {
                 config.asString("type"),
                 isPrefix);
 
+        if (config.exists("document_id")) {
+            es.withDocumentId(config.get("document_id"));
+        }
+
         if (config.exists("signer")) {
             es.withSigner(config.get("signer"));
         }

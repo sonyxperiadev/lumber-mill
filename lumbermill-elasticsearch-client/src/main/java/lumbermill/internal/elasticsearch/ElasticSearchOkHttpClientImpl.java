@@ -108,6 +108,7 @@ public class ElasticSearchOkHttpClientImpl {
     private final URL url;
     private final StringTemplate index;
     private final StringTemplate type;
+    private Optional<StringTemplate> documentId = Optional.empty();
 
     private Optional<RequestSigner> signer = Optional.empty();
 
@@ -141,6 +142,15 @@ public class ElasticSearchOkHttpClientImpl {
         return this;
     }
 
+    /**
+     * Set the _id of each document in bulk, supports StringTemplate.
+     * @param documentId - Is a patten for extracting the _id to use
+     * @return
+     */
+    public ElasticSearchOkHttpClientImpl withDocumentId(String documentId) {
+        this.documentId = Optional.of(StringTemplate.compile(documentId));
+        return this;
+    }
 
     public Observable<ElasticSearchBulkResponseEvent> postEvent(ElasticSearchBulkRequestEvent requestEvent) throws IndexFailedException {
 
@@ -249,6 +259,15 @@ public class ElasticSearchOkHttpClientImpl {
                     + index.original());
         }
 
+        Optional<String> formattedDocumentId = Optional.empty();
+        if (documentId.isPresent()) {
+            formattedDocumentId = documentId.get().format(event);
+            if (!formattedDocumentId.isPresent()) {
+                throw new IllegalStateException("Issue with index, could not extract field from event: "
+                        + index.original());
+            }
+        }
+
         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
         ObjectNode data = OBJECT_MAPPER.createObjectNode();
 
@@ -269,6 +288,10 @@ public class ElasticSearchOkHttpClientImpl {
             data.put("_index", formattedIndex.get());
         }
         data.put("_type", formattedType.get());
+        
+        if (formattedDocumentId.isPresent()) {
+            data.put("_id", formattedDocumentId.get());
+        }
         objectNode.set("index", data);
 
         return objectNode.toString();

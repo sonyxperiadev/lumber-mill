@@ -15,11 +15,13 @@
 package lumbermill.elasticsearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.Json;
 import lumbermill.internal.elasticsearch.ElasticSearchBulkResponse;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +47,6 @@ public class ElasticSearchBulkResponseEvent extends JsonEvent {
     public static ElasticSearchBulkResponseEvent ofPostponed(ElasticSearchBulkRequestEvent requestEvent) {
         return new ElasticSearchBulkResponseEvent(buildPostponedJsonResponse(requestEvent), new HashMap<>());
     }
-
 
 
     private ElasticSearchBulkResponseEvent(ObjectNode node, Map<JsonEvent, JsonEvent> eventAndResponse) {
@@ -104,12 +105,40 @@ public class ElasticSearchBulkResponseEvent extends JsonEvent {
     }
 
     private static JsonNode toPostponsedEvent(JsonEvent jsonEvent) {
-        System.out.println("toPostPOned: " + jsonEvent.toString(true));
         ObjectNode objectNode = Json.OBJECT_MAPPER.createObjectNode();
-        objectNode.putObject("create").put("_id", "ID_CREATION_POSTPONED").put("status",202);
+        objectNode.putObject("create").put("_id", "ID_CREATION_POSTPONED").put("status", 202);
         return objectNode;
-
-        //{"create":{"_index":"logstash 2014.08.11.16","_type":"logs","_id":"HwBm8IAZT1ycsdJidIPlOQ","_version":1,"status":201}},
     }
 
+    /*
+      Below are used for test and debugging
+     */
+    public List<String> indexNames() {
+        ArrayNode array = (ArrayNode) super.jsonNode.get("items");
+        List<String> indices = new ArrayList<>();
+        array.forEach(created -> indices.add(dataNode(created).get("_index").asText()));
+        return indices;
+    }
+
+    public List<String> types() {
+        ArrayNode array = (ArrayNode) super.jsonNode.get("items");
+        List<String> indices = new ArrayList<>();
+        array.forEach(created -> indices.add(created.fieldNames().next()));
+        return indices;
+    }
+
+    public List<String> versions() {
+        ArrayNode array = (ArrayNode) super.jsonNode.get("items");
+        List<String> indices = new ArrayList<>();
+        array.forEach(created -> indices.add(dataNode(created).get("_version").asText()));
+        return indices;
+    }
+
+    /**
+     * Elasticsearch returns "create" if an entry was created and "index" if it was updated.
+     */
+    private JsonNode dataNode(JsonNode node) {
+        String action = node.has("index") ? "index" : "create";
+        return node.get(action);
+    }
 }

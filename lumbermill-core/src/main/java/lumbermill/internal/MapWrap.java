@@ -145,8 +145,8 @@ public final class MapWrap {
                 return this;
             }
         }
-        throw new IllegalStateException(format("One of the fields \'{}\' must exist in configuration " +
-                "but does not, existing keys are ",Arrays.toString(fields),
+        throw new IllegalStateException(format("One of the fields \'%s\' must exist in configuration " +
+                "but does not, existing keys are %s", Arrays.toString(fields),
                 Arrays.toString(config.keySet().toArray())));
     }
 

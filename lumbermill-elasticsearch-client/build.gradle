@@ -5,7 +5,7 @@ dependencies {
     compile project(':lumbermill-core')
     compile 'com.squareup.okhttp:okhttp:2.5.0'
     testCompile project(':lumbermill-http-server')
-
+    testCompile 'org.elasticsearch:elasticsearch:1.5.2' // Currently testing against AWS versio
 }
 
 
