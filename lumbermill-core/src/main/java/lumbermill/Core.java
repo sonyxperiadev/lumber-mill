@@ -59,6 +59,7 @@ public class Core {
     public static Zlib zlib = new Zlib();
     public static Base64 base64 = new Base64();
     public static File file = new File();
+    public static Fingerprint fingerprint = new Fingerprint();
 
 
     /**
@@ -98,7 +99,6 @@ public class Core {
      */
     public static <T extends Event> Func1<List<T>,List<T>> sequence(Func1<T, T> func) {
         return ts -> {
-
             List<Event> collect = ts.stream()
                     .map(e1 -> func.call(e1))
                     .collect(toList());
@@ -196,6 +196,7 @@ public class Core {
         };
     }
 
+
     public static Func1<JsonEvent,JsonEvent> timestampNow() {
         return jsonEvent -> jsonEvent.put("@timestamp", ZonedDateTime.now()
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -291,7 +292,7 @@ public class Core {
     /**
      * Adds the specified field and String value to the event
      */
-    public static Func1<JsonEvent,JsonEvent> addField(String field, String value) {
+    public static Func1<JsonEvent, JsonEvent> addField(String field, String value) {
         return event ->
             event.put(field, value);
     }

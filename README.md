@@ -75,8 +75,13 @@ class MoveFromS3ToKinesisLambdaEventProcessor implements EventProcessor {
                 to  : '@timestamp'
             )
         )
+        
         .map (
             addField ('type', 'elb')
+        )
+        
+        .map (
+            fingerprint.md5 ('{message}')
         )
         .buffer(500)
         .flatMap (

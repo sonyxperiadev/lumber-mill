@@ -14,23 +14,24 @@
  */
 package lumbermill;
 
-import org.junit.Test;
 import lumbermill.api.Codecs;
+import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
-import rx.Observable;
+import org.junit.Test;
+import rx.functions.Func1;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static lumbermill.internal.MapWrap.of;
 import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
 import static lumbermill.Core.addField;
+import static lumbermill.Core.fingerprint;
 import static lumbermill.Core.date;
 import static lumbermill.Core.ifExists;
 import static lumbermill.Core.ifMatch;
 import static lumbermill.Core.ifNotExists;
 import static lumbermill.Core.params;
+import static lumbermill.internal.MapWrap.of;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoreTest {
 
@@ -105,7 +106,75 @@ public class CoreTest {
         params(of("field", "message", "names", new ArrayList<>()).toMap()).call(event);
         assertThat(event.valueAsString("param")).isEqualTo("1");
         assertThat(event.valueAsString("param2")).isEqualTo("hej");
+    }
 
 
+    @Test
+    public void test_fingerprint_with_contents() {
+        Event event  = Codecs.BYTES.from("Hello");
+        Event event2 = Codecs.BYTES.from("Hello")
+                /* Metadata not part of contents*/.put("data", "data");
+
+        assertThat(
+                fingerprint.md5().call(event).valueAsString("fingerprint"))
+                .isEqualTo(
+                        fingerprint.md5().call(event2).valueAsString("fingerprint"));
+
+        // Lets verify that they do not match if they differ :-)
+        Event jsonEvent3 = Codecs.BYTES.from("HelloWorld");
+
+        assertThat (
+                fingerprint.md5().call(event).valueAsString("fingerprint"))
+                .isNotEqualTo(
+                        fingerprint.md5().call(jsonEvent3).valueAsString("fingerprint"));
+    }
+
+    @Test
+    public void test_fingerprint_with_fields_match() {
+        JsonEvent jsonEvent  = Codecs.TEXT_TO_JSON.from("Hello");
+        JsonEvent jsonEvent2 = Codecs.TEXT_TO_JSON.from("Hello").put("data", "data");
+
+        // Using only message
+        Func1<JsonEvent, JsonEvent> checksumFunction = fingerprint.md5("{message}");
+
+        assertThat(
+                checksumFunction.call(jsonEvent).valueAsString("fingerprint"))
+                    .isEqualTo(
+                            checksumFunction.call(jsonEvent2).valueAsString("fingerprint"));
+
+        // Sanity, Make sure it is a correct hash
+        assertThat(checksumFunction.call(jsonEvent).valueAsString("fingerprint"))
+                .isEqualTo("8b1a9953c4611296a827abf8c47804d7");
+
+        // Sanity, should be stored as metadata, make sure it is not there on raw copy
+        JsonEvent rawCopy = Codecs.JSON_OBJECT.from(jsonEvent.raw());
+        assertThat(rawCopy.has("fingerprint")).isFalse();
+    }
+
+    @Test
+    public void test_checksum_does_not_match_when_field_is_missing_in_one() {
+        JsonEvent jsonEvent  = Codecs.TEXT_TO_JSON.from("Hello");
+        JsonEvent jsonEvent2 = Codecs.TEXT_TO_JSON.from("Hello").put("data", "data");
+
+        // Data only occurs in second
+        Func1<JsonEvent, JsonEvent> checksumFunction = fingerprint.md5("{message}{data}");
+
+        assertThat(
+                checksumFunction.call(jsonEvent).valueAsString("fingerprint"))
+                .isNotEqualTo(
+                        checksumFunction.call(jsonEvent2).valueAsString("fingerprint"));
+    }
+
+    @Test
+    public void test_checksum_should_not_match() {
+        JsonEvent jsonEvent  = Codecs.TEXT_TO_JSON.from("Hello").put("data", "world");
+        JsonEvent jsonEvent2 = Codecs.TEXT_TO_JSON.from("Hello").put("data", "World");
+
+        Func1<JsonEvent, JsonEvent> checksumFunction = fingerprint.md5("{message}|{data}");
+
+        assertThat(
+                checksumFunction.call(jsonEvent).valueAsString("fingerprint"))
+                .isNotEqualTo(
+                        checksumFunction.call(jsonEvent2).valueAsString("fingerprint"));
     }
 }

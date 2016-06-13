@@ -51,6 +51,7 @@ public class JsonEvent extends MetaDataEvent {
         this.jsonNode = jsonNode;
     }
 
+
     public JsonEvent put(String fieldName, String value) {
         jsonNode.put(fieldName, value);
         return this;
@@ -80,8 +81,9 @@ public class JsonEvent extends MetaDataEvent {
         return jsonNode.get(field).asBoolean();
     }
 
-    public void putMetaData(String key, Object value) {
+    public JsonEvent putMetaData(String key, Object value) {
         super.put(key, value);
+        return this;
     }
 
     @Override
