@@ -149,7 +149,19 @@ public class Core {
     }
 
 
-
+    /**
+     * Allows adding a field or calling a function if a field exists.
+     *
+     * <pre>
+     *
+     * Groovy usage:
+     *  {@code
+     * ifExists ('field').map(function)
+     * ifExists ('field').add(field:value, field2:value2)
+     * )
+     * }
+     * </pre>
+     */
     public static ConditionalFunc1 ifExists(String field) {
         return new ConditionalFunc1(event -> event.has(field));
     }
@@ -166,6 +178,17 @@ public class Core {
                     return event.valueAsString(field).matches(value);
                 }
                 return false;
+        });
+    }
+
+    public static ConditionalFunc1 ifNotMatch(String field, String value) {
+        final StringTemplate template = StringTemplate.compile(value);
+
+        return new ConditionalFunc1(event -> {
+            if (event.has(field)) {
+                return !event.valueAsString(field).matches(value);
+            }
+            return false;
         });
     }
 

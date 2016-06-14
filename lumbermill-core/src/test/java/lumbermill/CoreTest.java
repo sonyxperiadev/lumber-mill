@@ -29,6 +29,7 @@ import static lumbermill.Core.date;
 import static lumbermill.Core.ifExists;
 import static lumbermill.Core.ifMatch;
 import static lumbermill.Core.ifNotExists;
+import static lumbermill.Core.ifNotMatch;
 import static lumbermill.Core.params;
 import static lumbermill.internal.MapWrap.of;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +84,17 @@ public class CoreTest {
 
         ifMatch("field", "no").add(of("foundagain", true).toMap()).call(event);
         assertThat(event.has("foundagain")).isFalse();
+    }
+
+    @Test
+    public void testIfNotMatchAdd() {
+        JsonEvent event = Codecs.TEXT_TO_JSON.from("Hello there").put("field", "yes");
+        ifNotMatch("field", "yes").add(of("found", true).toMap()).call(event);
+        assertThat(event.has("found")).isFalse();
+        assertThat(event.has("found")).isFalse();
+
+        ifNotMatch("field", "no").add(of("foundagain", true).toMap()).call(event);
+        assertThat(event.has("foundagain")).isTrue();
     }
 
     @Test
