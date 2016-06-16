@@ -142,7 +142,6 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
      * Called after all routes are setup
      */
     private void finalizeHttpServer() {
-        System.out.println("udududu");
         if (setupCompleted) {
             throw new IllegalStateException("You can only invoke stream() or forEach() " +
                     "once and either of them, not both");

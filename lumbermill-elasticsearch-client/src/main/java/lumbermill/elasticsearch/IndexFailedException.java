@@ -16,9 +16,15 @@ package lumbermill.elasticsearch;
 
 import com.squareup.okhttp.Response;
 import lumbermill.internal.elasticsearch.ElasticSearchOkHttpClientImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 
 public class IndexFailedException extends RuntimeException {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(IndexFailedException.class);
 
     public IndexFailedException(Throwable t) {
         super(t);
@@ -29,6 +35,12 @@ public class IndexFailedException extends RuntimeException {
     }
 
     public static IndexFailedException of(Response response) {
-        return new IndexFailedException(response.code() + ", " + response.message());
+        try {
+            return new IndexFailedException(response.code() + ", message:" + response.message() +
+                    ", body: " + response.body().string());
+        } catch (IOException e) {
+            LOGGER.warn("Failed to extract body from error message: " + e.getMessage());
+            return new IndexFailedException(response.code() + ", message:" + response.message());
+        }
     }
 }

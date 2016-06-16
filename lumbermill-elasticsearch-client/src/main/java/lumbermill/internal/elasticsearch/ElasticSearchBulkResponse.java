@@ -82,7 +82,9 @@ public class ElasticSearchBulkResponse {
             }
             pos++;
         }
-        LOGGER.debug("Found {} failed items", retryableEvents.size());
+        if (!retryableEvents.isEmpty()) {
+            LOGGER.debug("Found {} failed items", retryableEvents.size());
+        }
         return retryableEvents;
     }
 }

@@ -201,8 +201,6 @@ public class ElasticSearchOkHttpClientImpl {
             ElasticSearchBulkResponse bulkResponse = ElasticSearchBulkResponse.parse(
                     request.signableRequest, response);
             if (bulkResponse.hasErrors()) {
-                //List<JsonEvent> failedItems = bulkResponse.getRetryableItems(request.signableRequest);
-                //LOGGER.debug("BulkResponse has errors, retrying {} failed items", failedItems.size());
                 if (request.hasNextAttempt()) {
                     post(request.nextAttempt(bulkResponse));
                 } else {
@@ -319,16 +317,13 @@ public class ElasticSearchOkHttpClientImpl {
 
 
     public static FatalIndexException createFatalIndexException(RequestSigner.SignableRequest request, Response response) {
-        byte[] bytes = request.payload().get();
-        String responseBody;
         try {
-            responseBody = response.body().string();
+            return new FatalIndexException(response.code() + ", message:" + response.message() +
+                    ", body: " + response.body().string());
         } catch (IOException e) {
-            responseBody = "Failed to extract responseBody due to : " + e.getMessage();
+            LOGGER.warn("Failed to extract body from error message: " + e.getMessage());
+            return new FatalIndexException(response.code() + ", message:" + response.message());
         }
-        return new FatalIndexException(format("Received %s : %s \nResponse: %s\nRequest (3000 chars): %s",
-                response.code(), response.message(), responseBody,
-                new String(bytes, 0, Math.min(3000, bytes.length))));
     }
 
     private class ElasticSearchRequest implements RequestSigner.SignableRequest {
