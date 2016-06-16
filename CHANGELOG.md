@@ -2,6 +2,12 @@
 
 ### [Unreleased / master] Version 0.0.11-SNAPSHOT
 
+* Enhanced error handling of ElasticSearch to include message body
+* Support for extracting a json body from a string field in an event.
+* Support for ifNotExists(field).map(func) or .add(fields)
+* Support for fingerprint (md5 checksum)
+* Minor bugfixes
+
 ### 0.0.10
 * Bulk API Client: Support updates by supplying document_id pattern
 * Bulk API Client: StringTemplate patterns support for index field
