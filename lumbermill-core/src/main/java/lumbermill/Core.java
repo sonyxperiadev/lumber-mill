@@ -364,6 +364,75 @@ public class Core {
     }
 
     /**
+     * Extracts a string value from JsonEvent and merges it with the "parent" event or replaces the current event with
+     * the child event. Note that when merging, any field that already exists will be overwritten so make sure to
+     * rename these fields before applying this function if they should be kept.
+     *
+     * <pre>
+     * Groovy usage:
+     *
+     *  {@code
+     * .map (
+     *     extractJsonObject (field: message, merge:true)
+     *  )
+     * }
+     * Input:
+     * {@code
+     * {
+     *   "message" : "{\"hostname\":\"b1e674549118\",\"level\":\"INFO\",\"message\":\"A log message\",\"@timestamp\":\"2016-06-15T13:26:52.485Z\"}",
+     *   "logGroup" : "LogGroup1",
+     *   "logStream" : "application-latest",
+     *   "@timestamp" : "2016-06-15T13:26:52.49Z"
+     * }}
+     *
+     * Output:
+     * {@code
+     * {
+     *   "hostname" : "b1e674549118",
+     *   "level" : "INFO",
+     *   "message" : "A log message",
+     *   "logGroup" : "LogGroup1",
+     *   "logStream" : "application-latest",
+     *   "@timestamp" : "2016-06-15T13:26:52.485Z"
+     * }}
+     * </pre>
+     */
+    public static  Func1<JsonEvent, JsonEvent> extractJsonObject(Map map) {
+        final MapWrap config = MapWrap.of(map).assertExists("field");
+        final boolean merge = config.exists("merge")
+                ? config.asBoolean("merge")
+                : true;
+        final boolean ignoreNonJson = config.exists("ignoreNonJson")
+                ? config.asBoolean("ignoreNonJson")
+                : true;
+
+        return jsonEvent -> {
+            String shouldBeJson = jsonEvent.valueAsString(config.asString("field"));
+
+            // Perhaps catching json exception is good enough instead of this string comparison stuff...
+            if (!shouldBeJson.trim().startsWith("{")) {
+                if (ignoreNonJson) {
+                    return jsonEvent;
+                }
+                LOG.error("Received non json event and configured not to ignore");
+                LOG.error("Expected to be json: " + shouldBeJson);
+                throw new IllegalStateException("Received non json event and configured not to ignore");
+            }
+
+            JsonEvent childEvent = Codecs.JSON_OBJECT.from(shouldBeJson);
+            if (merge) {
+                jsonEvent.merge(childEvent);
+                return jsonEvent;
+            }
+            return childEvent;
+        };
+    }
+
+    public static  Func1<JsonEvent, JsonEvent> extractJsonObject(String field) {
+        return extractJsonObject(MapWrap.of("field", field).toMap());
+    }
+
+    /**
      * Logstash default decoding, takes that value and simply puts that under the message field. A @timestamp is also
      * added with current time.
      * <pre>
