@@ -17,10 +17,13 @@ package lumbermill;
 
 import lumbermill.api.Codecs;
 import lumbermill.api.JsonEvent;
+import lumbermill.internal.JsonParseException;
 import lumbermill.internal.MapWrap;
 import org.junit.Test;
+import rx.Observable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 // TODO - Move other json related tests here
 public class JsonTest {
@@ -76,10 +79,29 @@ public class JsonTest {
         assertThat(mutatingEvent.valueAsString("@timestamp")).isEqualTo("2016-06-15T13:26:52.49Z");
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = JsonParseException.class)
     public void test_decode_non_json_error() {
         JsonEvent mutatingEvent = Codecs.JSON_OBJECT.from(DECODED_CLOUDWATCH_LOGS_EVENT_WITH_JSON_MESSAGE);
         Core.extractJsonObject(
                 MapWrap.of("field", "logGroup", "merge", false, "ignoreNonJson", false).toMap()).call(mutatingEvent);
+    }
+
+
+    @Test (expected = JsonParseException.class)
+    public void test_parse_failing_json() {
+        Observable.just(Codecs.BYTES.from("This is not json"))
+                .map(Core.toJsonObject())
+                .toBlocking()
+                .subscribe();
+    }
+
+    @Test
+    public void test_parse_failing_json_but_use_text_to_json_if_fails() {
+        Observable.just(Codecs.BYTES.from("This is not json"))
+                .map(Core.toJsonObject(MapWrap.of("create_json_on_failure", true).toMap()))
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("message")))
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("@timestamp")))
+                .toBlocking()
+                .subscribe();
     }
 }

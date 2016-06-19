@@ -18,11 +18,13 @@ import lumbermill.api.AnyJsonEvent;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
+import lumbermill.internal.JsonParseException;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.RetryStrategyImpl;
 import lumbermill.internal.StringTemplate;
 import lumbermill.internal.transformers.ConditionalFunc1;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -37,6 +39,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -357,6 +360,26 @@ public class Core {
     }
 
     /**
+     * Decodes the event into a json object but will create a JsonObject from Codecs.TEXT_TO_JSON if
+     * parsing json fails.
+     */
+    public static <E extends Event> Func1<E, JsonEvent> toJsonObject(Map map) {
+        MapWrap conf = MapWrap.of(map)
+                .assertExists("create_json_on_failure");
+
+        return e -> {
+            try {
+                return Codecs.JSON_OBJECT.from(e);
+            } catch (JsonParseException ex) {
+              if(conf.asBoolean("create_json_on_failure")) {
+                  return Codecs.TEXT_TO_JSON.from(e);
+              }
+                throw ex;
+            }
+        };
+    }
+
+    /**
      * Decodes the event into a json object, use this if your events are json.
      */
     public static <E extends Event> Func1<E, JsonEvent> toJsonObject() {
@@ -408,23 +431,20 @@ public class Core {
 
         return jsonEvent -> {
             String shouldBeJson = jsonEvent.valueAsString(config.asString("field"));
-
-            // Perhaps catching json exception is good enough instead of this string comparison stuff...
-            if (!shouldBeJson.trim().startsWith("{")) {
-                if (ignoreNonJson) {
+            try {
+                JsonEvent childEvent = Codecs.JSON_OBJECT.from(shouldBeJson);
+                if (merge) {
+                    jsonEvent.merge(childEvent);
                     return jsonEvent;
                 }
-                LOG.error("Received non json event and configured not to ignore");
-                LOG.error("Expected to be json: " + shouldBeJson);
-                throw new IllegalStateException("Received non json event and configured not to ignore");
+                return childEvent;
+            } catch (JsonParseException e) {
+                    if (ignoreNonJson) {
+                        LOG.debug("Got json parse when extracting {} from {}", config.asString("field"), jsonEvent.raw().utf8());
+                        return jsonEvent;
+                    }
+                throw e;
             }
-
-            JsonEvent childEvent = Codecs.JSON_OBJECT.from(shouldBeJson);
-            if (merge) {
-                jsonEvent.merge(childEvent);
-                return jsonEvent;
-            }
-            return childEvent;
         };
     }
 

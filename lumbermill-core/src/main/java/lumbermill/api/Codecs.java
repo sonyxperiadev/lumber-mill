@@ -23,7 +23,10 @@ import lumbermill.api.Codec;
 import lumbermill.api.Event;
 import lumbermill.api.AnyJsonEvent;
 import lumbermill.api.JsonEvent;
+import lumbermill.internal.JsonParseException;
 import okio.ByteString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -34,6 +37,8 @@ import static java.time.ZonedDateTime.now;
  * Core codecs
  */
 public class Codecs {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Codecs.class);
 
     public  static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -144,6 +149,7 @@ public class Codecs {
             JsonNode node = objectMapper.readTree(json.utf8());
             return new AnyJsonEvent(node);
         } catch (IOException e) {
+            LOGGER.warn("Failed to parse json array from: " + json.utf8());
             throw new RuntimeException(e);
         }
     }
@@ -158,11 +164,12 @@ public class Codecs {
     }
 
 
-    private static final JsonEvent json(ByteString json) {
+    private static JsonEvent json(ByteString json) {
         try {
             return new JsonEvent((ObjectNode)objectMapper.readTree(json.utf8()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to parse json from: " + json.utf8());
+            throw new JsonParseException(e);
         }
     }
 
