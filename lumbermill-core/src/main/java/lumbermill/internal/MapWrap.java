@@ -130,7 +130,7 @@ public final class MapWrap {
     public MapWrap assertExists(String... fields) {
         for( String s: fields) {
             if (! exists(s)) {
-                throw new IllegalStateException(format("The field \'{}\' does not exist in configuration " +
+                throw new IllegalStateException(format("The field \'"+ s +"\' does not exist in configuration " +
                         "and is required, existing keys are " +
                         Arrays.toString(config.keySet().toArray())));
             }

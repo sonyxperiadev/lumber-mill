@@ -16,6 +16,7 @@ package lumbermill.internal.transformers;
 
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
+import rx.Observable;
 import rx.functions.Func1;
 
 import java.util.Map;
@@ -46,6 +47,15 @@ public class ConditionalFunc1 {
                 return f.call(e);
             }
             return e;
+        };
+    }
+
+    public <E extends Event> Func1<E, Observable<E>> flatMap(Func1<E,Observable<E>> f) {
+        return e -> {
+            if (condition.match(e)) {
+                return f.call(e);
+            }
+            return Observable.just(e);
         };
     }
 

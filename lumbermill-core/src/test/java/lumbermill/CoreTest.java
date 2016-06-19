@@ -17,15 +17,19 @@ package lumbermill;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
+import lumbermill.internal.MapWrap;
 import org.junit.Test;
+import rx.Observable;
 import rx.functions.Func1;
 
 import java.util.ArrayList;
 
 import static java.util.Arrays.asList;
 import static lumbermill.Core.addField;
+import static lumbermill.Core.console;
 import static lumbermill.Core.fingerprint;
 import static lumbermill.Core.date;
+import static lumbermill.Core.grok;
 import static lumbermill.Core.ifExists;
 import static lumbermill.Core.ifMatch;
 import static lumbermill.Core.ifNotExists;
@@ -73,6 +77,18 @@ public class CoreTest {
 
         ifNotExists("nonexisting").map(addField("foundagain", true)).call(event);
         assertThat(event.has("foundagain")).isTrue();
+    }
+
+    @Test
+    public void testIfNotExistsInvokeFlatMap() {
+        Observable.just(Codecs.TEXT_TO_JSON.from("Hello there"))
+                .flatMap(ifExists("message").flatMap (
+                        grok.parse(MapWrap.of("field", "message", "pattern", "%{UUID}").toMap())))
+                .doOnNext(console.stdout())
+                .subscribe();
+
+//        assertThat(event.hasTag("_grokparsefailure")).isTrue();
+
     }
 
     @Test
