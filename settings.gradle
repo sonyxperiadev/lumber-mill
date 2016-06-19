@@ -3,4 +3,5 @@ include 'lumbermill-core',
     'lumbermill-http-server',
     'lumbermill-elasticsearch-client',
     'lumbermill-aws',
-    'lumbermill-aws-lambda'
+    'lumbermill-aws-lambda',
+    'lumbermill-simple-samples'

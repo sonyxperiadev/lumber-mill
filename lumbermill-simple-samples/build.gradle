@@ -1,0 +1,9 @@
+
+
+dependencies {
+
+    compile project(':lumbermill-core')
+
+}
+
+
