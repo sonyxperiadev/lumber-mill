@@ -49,7 +49,7 @@ public class ElasticSearch  {
      */
     public Func1<List<JsonEvent>, Observable<ElasticSearchBulkResponseEvent>> client(Map map) {
         final ElasticSearchOkHttpClientImpl client = clientFactory.ofParameters(MapWrap.of(map));
-        return client::post;
+        return events -> client.post(events);
     }
 
     /**

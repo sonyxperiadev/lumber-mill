@@ -60,30 +60,43 @@ public class ElasticSearchBulkResponse {
     List<JsonEvent> getRetryableItems(RequestSigner.SignableRequest request) {
 
         ArrayNode array = (ArrayNode)responseContents.get("items");
-        int pos = 0;
+        int pos          = 0;
+        int updatedCount = 0;
+
         for (JsonNode node: array) {
-            int statusCode;
+            JsonNode dataNode;
+
             if (node.has("create")) {
-                statusCode = node.get("create").get("status").asInt();
+                dataNode = node.get("create");//.get("status").asInt();
              } else if (node.has("index")) {
-                // Issue #9 - AWS Elasticsearch returns "index" even if we send "create" for certain exceptions
-                statusCode = node.get("index").get("status").asInt();
+                dataNode = node.get("index");//.get("status").asInt();
             } else {
                 throw new IllegalStateException("Could not find field create or index in response");
             }
+            int statusCode = dataNode.get("status").asInt();
             eventWithResponse.put(request.original().get(pos), new JsonEvent((ObjectNode)node));
             if (statusCode != 200 && statusCode != 201 && statusCode != 202) {
                 // No idea to retry if BAD_REQUEST, just skip and log them
+                String err = dataNode.has("error") ? node.get("error").asText() : "no error message";
                 if (statusCode == 400) {
-                    LOGGER.info("Will not retry event due to BAD_REQUEST:" +  node.toString());
+                    LOGGER.info("Will not retry event due to BAD_REQUEST:" +  err);
                 }
-                LOGGER.trace("Request failed " + node.toString());
+
+                LOGGER.debug("Bulk entry had errors, status: {}, error: {}", statusCode, err);
                 retryableEvents.add(request.original().get(pos));
+            } else {
+                // Successful
+                if (dataNode.get("_version").asInt() > 1) {
+                    updatedCount++;
+                }
             }
             pos++;
         }
         if (!retryableEvents.isEmpty()) {
-            LOGGER.debug("Found {} failed items", retryableEvents.size());
+            LOGGER.debug("Bulk response contains {} failed items out of {}", retryableEvents.size(), array.size());
+        }
+        if (updatedCount > 0) {
+            LOGGER.debug("Bulk response contains {} document updates out of {}", updatedCount, array.size());
         }
         return retryableEvents;
     }
