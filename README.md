@@ -122,12 +122,12 @@ Maven
     <dependency>
           <groupId>com.sonymobile</groupId>
           <artifactId>lumbermill-aws-lambda</artifactId>
-          <version>0.0.10</version>
+          <version>0.0.11</version>
     </dependency>
 
 Gradle
 
-    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.10'
+    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.11'
     
 
 ## Samples

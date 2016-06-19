@@ -1,7 +1,13 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.11-SNAPSHOT
+### [Unreleased / master] Version 0.0.12-SNAPSHOT
 
+### 0.0.11
+
+* Support for flatMap() when using ifExists/ifNotExists/ifMatch
+* Fixed bug when reading elasticsearch response error and updated items
+* Possible to extract a string from json field and decode to json
+* Enhanced json support for "try" parse json, otherwise text_to_json
 * Enhanced error handling of ElasticSearch to include message body
 * Support for extracting a json body from a string field in an event.
 * Support for ifNotExists(field).map(func) or .add(fields)
