@@ -210,6 +210,9 @@ public class JsonEvent extends MetaDataEvent {
 
     @Override
     public void addTags(List<String> tags) {
+        if (!jsonNode.has("tags")) {
+            jsonNode.putArray("tags");
+        }
         add("tags", tags.toArray(new String[0]));
     }
 

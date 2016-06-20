@@ -159,7 +159,6 @@ public class Codecs {
         ObjectNode objectNode = objectMapper.createObjectNode()
                 .put("message", raw.utf8())
                 .put("@timestamp", now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        objectNode.set("tags",objectNode.arrayNode());
         return new JsonEvent(objectNode);
     }
 
