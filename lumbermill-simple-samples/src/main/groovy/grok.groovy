@@ -19,13 +19,24 @@ import rx.Observable
 import static lumbermill.Core.*
 
 /*
- Simple demonstration of grok usage.
- */
+ * Simple grok, will result in:
+ *
+ * {
+ *    "message" : "1 times",
+ *    "@timestamp" : "2016-06-20T08:18:28.283+02:00",
+ *    "number" : 1,
+ *    "text" : "times"
+ * }
+ *
+ * </pre>
+*/
+
 Observable.just(Codecs.TEXT_TO_JSON.from("1 times"))
     .flatMap (
         Core.grok.parse (
-            field  : 'message',
-            pattern: '%{NUMBER:number:int} %{WORD:text}'
+            field       : 'message',
+            pattern     : '%{NUMBER:number:int} %{WORD:text}',
+            tagOnFailure: true
         )
     )
     .doOnNext(console.stdout())
