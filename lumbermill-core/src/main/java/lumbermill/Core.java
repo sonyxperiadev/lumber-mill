@@ -14,6 +14,7 @@
  */
 package lumbermill;
 
+import groovy.lang.Closure;
 import lumbermill.api.AnyJsonEvent;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
@@ -24,7 +25,6 @@ import lumbermill.internal.RetryStrategyImpl;
 import lumbermill.internal.StringTemplate;
 import lumbermill.internal.transformers.ConditionalFunc1;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -151,6 +150,108 @@ public class Core {
         };
     }
 
+    /***
+     * Executes a closure based if the specfied tag does not exists
+     *
+     * <pre>
+     * Groovy usage:
+     *  {@code
+     * computeIfTagNotExists ('tagname') {
+     *    grok.parse (...)
+     * }
+     * }
+     * </pre>
+     */
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagExists(String tag, Closure cmd) {
+        return e -> {
+            if (e.hasTag(tag) ) {
+                return doCompute(cmd, e);
+            }
+            return Observable.just(e);
+        };
+    }
+
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagNotExists(String tag, Closure cmd) {
+        return e -> {
+            if (!e.hasTag(tag) ) {
+                return doCompute(cmd, e);
+            }
+            return Observable.just(e);
+        };
+    }
+
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfNotMatch(String field, String value, Closure cmd) {
+        final StringTemplate template = StringTemplate.compile(value);
+        return e -> {
+            if (e.has(field) || !e.valueAsString(field).matches(value)) {
+                return doCompute(cmd, e);
+            }
+            return Observable.just(e);
+        };
+    }
+
+    public static  Func1<JsonEvent, Observable<JsonEvent>> computeIfMatch(String field, String value, Closure cmd) {
+        final StringTemplate template = StringTemplate.compile(value);
+        return e -> {
+            if (e.has(field) && e.valueAsString(field).matches(value)) {
+                return doCompute(cmd, e);
+            }
+            return Observable.just(e);
+        };
+    }
+
+    public static <E extends Event> Func1<E, Observable<E>> computeIfExists(String field, Closure cmd) {
+        return e -> {
+
+            if (!e.has(field)) {
+                return Observable.just(e);
+            }
+            return doCompute(cmd, e);
+        };
+    }
+
+    public static <E extends Event> Func1<E, Observable<E>> computeIfAbsent(String field, Closure cmd) {
+        return e -> {
+            if (e.has(field)) {
+                return Observable.just(e);
+            }
+            return doCompute(cmd, e);
+        };
+    }
+
+    private static <E extends Event> Observable<E> doCompute(Closure cmd, E e) {
+
+            Object closureResult = cmd.call(e);
+
+            // Can be null, just return original event
+            if (closureResult == null) {
+                return Observable.just(e);
+            }
+            // Could be an event, return it
+            if (closureResult instanceof Event) {
+                return Observable.just((E) closureResult);
+            }
+
+            // Could be an observable, simply return it
+            if (closureResult instanceof Observable) {
+                return (Observable)closureResult;
+            }
+
+            // Or a function, lets call it and return the result
+            if (closureResult instanceof Func1) {
+                Object result = ((Func1) closureResult).call(e);
+                if (result instanceof Event) {
+                    return Observable.just((E)result);
+                }
+                if (result instanceof Observable) {
+                    return (Observable)result;
+                }
+            }
+            LOG.warn("Unable to handle ifAbsent Closure, expected Event or Func1 but got {}",
+                    closureResult.getClass());
+            return Observable.just(e);
+
+    }
 
     /**
      * Allows adding a field or calling a function if a field exists.
@@ -165,14 +266,17 @@ public class Core {
      * }
      * </pre>
      */
+    @Deprecated
     public static ConditionalFunc1 ifExists(String field) {
         return new ConditionalFunc1(event -> event.has(field));
     }
 
+    @Deprecated
     public static ConditionalFunc1 ifNotExists(String field) {
         return new ConditionalFunc1(event -> !event.has(field));
     }
 
+    @Deprecated
     public static ConditionalFunc1 ifMatch(String field, String value) {
         final StringTemplate template = StringTemplate.compile(value);
 
@@ -184,6 +288,7 @@ public class Core {
         });
     }
 
+    @Deprecated
     public static ConditionalFunc1 ifNotMatch(String field, String value) {
         final StringTemplate template = StringTemplate.compile(value);
 
