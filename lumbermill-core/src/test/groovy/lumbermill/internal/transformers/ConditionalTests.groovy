@@ -165,7 +165,7 @@ class ConditionalTests extends GroovyTestCase {
                 pattern: '%{NUMBER:word}'
             )
         ).flatMap(
-            computeIfTagNotExists('_grokparsefailure') {
+            computeIfTagAbsent('_grokparsefailure') {
                 addField("key", "value")
             }
         ).doOnNext({ JsonEvent e -> assertThat(e.has("key")).isFalse() })

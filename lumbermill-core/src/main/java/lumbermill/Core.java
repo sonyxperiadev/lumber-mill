@@ -156,7 +156,7 @@ public class Core {
      * <pre>
      * Groovy usage:
      *  {@code
-     * computeIfTagNotExists ('tagname') {
+     * computeIfTagAbsent ('tagname') {
      *    grok.parse (...)
      * }
      * }
@@ -171,7 +171,7 @@ public class Core {
         };
     }
 
-    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagNotExists(String tag, Closure cmd) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagAbsent(String tag, Closure cmd) {
         return e -> {
             if (!e.hasTag(tag) ) {
                 return doCompute(cmd, e);

@@ -2,6 +2,12 @@
 
 ### [Unreleased / master] Version 0.0.12-SNAPSHOT
 
+* Improved Conditionals to use instead of now @Deprecated ConditionalFunc1.
+  computeIfAbsent / computeIfExists 
+  computeIfTagExists / ifTagAbsent
+  computeIfMatch / computeIfNotMatch
+  
+
 ### 0.0.11
 
 * Support for flatMap() when using ifExists/ifNotExists/ifMatch
