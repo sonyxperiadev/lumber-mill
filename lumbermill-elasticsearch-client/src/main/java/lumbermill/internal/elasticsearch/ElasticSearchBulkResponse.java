@@ -77,7 +77,7 @@ public class ElasticSearchBulkResponse {
             eventWithResponse.put(request.original().get(pos), new JsonEvent((ObjectNode)node));
             if (statusCode != 200 && statusCode != 201 && statusCode != 202) {
                 // No idea to retry if BAD_REQUEST, just skip and log them
-                String err = dataNode.has("error") ? node.get("error").asText() : "no error message";
+                String err = dataNode.has("error") ? dataNode.get("error").asText() : "no error message";
                 if (statusCode == 400) {
                     LOGGER.info("Will not retry event due to BAD_REQUEST:" +  err);
                 }
