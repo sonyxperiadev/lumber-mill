@@ -1,5 +1,7 @@
 # Lumber Mill Releases
 
+### [Unreleased / master] Version 0.0.13-SNAPSHOT
+
 
 ### 0.0.12
 * Fixed serious bug when handling elasticsearch error response
