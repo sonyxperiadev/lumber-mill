@@ -12,6 +12,9 @@ S3, Kinesis, Cloudwatch and possiblity to run as AWS Lambda.
 **Code-As-Config**
 Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline and are written in groovy.
 
+#### Changes
+[View Changelog](CHANGELOG.md)
+
 #### Lambda Cloudwatch Logs to AWS Elasticsearch sample
 
 ```groovy
