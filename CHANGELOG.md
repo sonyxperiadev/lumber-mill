@@ -1,5 +1,7 @@
 # Lumber Mill Releases
 
+### [Unreleased / master] Version 0.0.14-SNAPSHOT
+
 ### 0.0.13
 * Enhanced http-server functionality
 * JsonEvent has better support for numerical values
@@ -8,9 +10,10 @@
 ### 0.0.12
 * Fixed serious bug when handling elasticsearch error response
 * Improved Conditionals to use instead of now @Deprecated ConditionalFunc1.
-  computeIfAbsent / computeIfExists 
-  computeIfTagExists / ifTagAbsent
-  computeIfMatch / computeIfNotMatch
+
+    computeIfAbsent / computeIfExists 
+    computeIfTagExists / ifTagAbsent
+    computeIfMatch / computeIfNotMatch
   
 
 ### 0.0.11
