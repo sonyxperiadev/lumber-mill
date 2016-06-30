@@ -14,7 +14,6 @@
  */
 package lumbermill.internal.http;
 
-import com.sun.org.apache.bcel.internal.classfile.Code;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
@@ -25,11 +24,11 @@ import io.vertx.ext.web.handler.BodyHandler;
 import lumbermill.Http;
 import lumbermill.api.Codec;
 import lumbermill.api.Event;
-import lumbermill.http.HttpHandler;
-import lumbermill.internal.MapWrap;
 import lumbermill.api.MetaDataEvent;
+import lumbermill.http.HttpHandler;
 import lumbermill.http.UnitOfWork;
 import lumbermill.http.UnitOfWorkListener;
+import lumbermill.internal.MapWrap;
 import lumbermill.internal.http.PostHandler.OnPostCreatedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,6 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
     private static final int DEFAULT_PORT = 5678;
     private static final String ON_NO_TAG = "_totag";
     private final int port;
-    private final BlockingQueue<Event> queue;
     private final Router router;
     private final Vertx vertx;
     private final HttpServer httpServer;
@@ -65,7 +63,6 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
 
     public VertxHttpServer(MapWrap config) {
         port = config.get("port", DEFAULT_PORT);
-        queue = new LinkedBlockingQueue<>();
         observableListenersByTag = new HashMap<>();
 
         // Setup vertx
