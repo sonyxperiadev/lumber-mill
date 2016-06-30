@@ -1,7 +1,9 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.13-SNAPSHOT
-
+### 0.0.13
+* Enhanced http-server functionality
+* JsonEvent has better support for numerical values
+* Improved support for getting timestamps from ms and secs
 
 ### 0.0.12
 * Fixed serious bug when handling elasticsearch error response
