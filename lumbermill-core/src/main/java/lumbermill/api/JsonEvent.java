@@ -67,6 +67,11 @@ public class JsonEvent extends MetaDataEvent {
         return this;
     }
 
+    public JsonEvent put(String fieldName, double value) {
+        jsonNode.put(fieldName, value);
+        return this;
+    }
+
     public JsonEvent put(String fieldName, float value) {
         jsonNode.put(fieldName, value);
         return this;
@@ -75,6 +80,14 @@ public class JsonEvent extends MetaDataEvent {
     public JsonEvent put(String fieldName, boolean value) {
         jsonNode.put(fieldName, value);
         return this;
+    }
+
+    public long asLong(String field) {
+        return jsonNode.get(field).asLong();
+    }
+
+    public double asDouble(String field) {
+        return jsonNode.get(field).asDouble();
     }
 
     public Boolean asBoolean(String field) {
@@ -134,12 +147,13 @@ public class JsonEvent extends MetaDataEvent {
         }
     }
 
-    public void merge(JsonEvent event) {
+    public JsonEvent merge(JsonEvent event) {
         Iterator<String> stringIterator = event.jsonNode.fieldNames();
         while(stringIterator.hasNext()) {
             String field = stringIterator.next();
             jsonNode.set(field, event.jsonNode.get(field));
         }
+        return this;
     }
 
     public void eachField(FieldProcessor processor) {
@@ -161,8 +175,11 @@ public class JsonEvent extends MetaDataEvent {
     }
 
     public JsonEvent remove(String... fields) {
+
         for(String field : fields) {
-            jsonNode.remove(field);
+            if (jsonNode.has(field)) {
+                jsonNode.remove(field);
+            }
         }
         return this;
     }
@@ -262,6 +279,12 @@ public class JsonEvent extends MetaDataEvent {
         return new JsonEvent((ObjectNode) this.jsonNode.get(field));
     }
 
+    /**
+     * Lets expose this until we have a decent API to work with JSON.
+     */
+    public ObjectNode unsafe() {
+        return this.jsonNode;
+    }
 
     public interface FieldProcessor {
         void process(String field, String value);

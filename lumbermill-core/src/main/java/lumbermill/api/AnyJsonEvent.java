@@ -16,8 +16,6 @@ package lumbermill.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okio.ByteString;
 import rx.Observable;
@@ -47,8 +45,6 @@ public class AnyJsonEvent extends MetaDataEvent {
                 .map(jsonEvent -> jsonEvent.jsonNode)
                 .collect(toList())));
     }
-
-
 
     public Observable<JsonEvent> each() {
         List<JsonEvent> list = new ArrayList<>();
