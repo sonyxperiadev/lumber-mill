@@ -68,7 +68,7 @@ public class Core {
      * If the current event is a json array, split that array into multiple JsonEvent.
      */
     public static Func1<AnyJsonEvent, Observable<JsonEvent>> splitIfArray() {
-        return e -> e.each();
+        return e -> e.each().map(jsonEvent -> jsonEvent.withMetaData(e));
     }
 
 
@@ -162,7 +162,7 @@ public class Core {
      * }
      * </pre>
      */
-    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagExists(String tag, Closure cmd) {
+    public  static <E extends Event> Func1<E, Observable<E>> computeIfTagExists(String tag, Closure cmd) {
         return e -> {
             if (e.hasTag(tag) ) {
                 return doCompute(cmd, e);
@@ -337,8 +337,30 @@ public class Core {
         return timestampFromMs(from, "@timestamp");
     }
 
+    public static Func1<JsonEvent,JsonEvent> timestampFromSecs(String from) {
+        return timestampFromSecs(from, "@timestamp");
+    }
+
     public static Func1<JsonEvent,JsonEvent> timestampFromMs() {
         return timestampFromMs("@timestamp", "@timestamp");
+    }
+
+    public static Func1<JsonEvent,JsonEvent> timestampFromSecs() {
+        return timestampFromSecs("@timestamp", "@timestamp");
+    }
+
+    public static Func1<JsonEvent,JsonEvent> timestampFromSecs(String from, String to) {
+        return e -> {
+            if (! e.has(from)) {
+                return e;
+            }
+            String format = ZonedDateTime.ofInstant(
+                    Instant.ofEpochMilli(e.asLong(from) * 1000),
+                    ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            return e.put (to,
+                    format);
+        };
     }
 
     public static Func1<JsonEvent,JsonEvent> timestampFromMs(String from, String to) {
@@ -347,7 +369,7 @@ public class Core {
                 return e;
             }
             String format = ZonedDateTime.ofInstant(
-                    Instant.ofEpochMilli(Long.parseLong(e.valueAsString(from))),
+                    Instant.ofEpochMilli(e.asLong(from)),
                     ZoneId.systemDefault())
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             return e.put (to,
@@ -581,7 +603,9 @@ public class Core {
      * of envelope.
      */
     public static  Func1<JsonEvent, AnyJsonEvent> jsonOfField(String field) {
-        return e -> e.child(field);
+        return e -> {
+            return e.child(field).withMetaData(e);
+        };
     }
 
 
