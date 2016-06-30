@@ -16,6 +16,7 @@ package lumbermill.internal.http;
 
 import com.fasterxml.jackson.core.JsonParseException;
 
+import lumbermill.http.AbstractHttpHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ import lumbermill.api.Codec;
 import lumbermill.api.Event;
 import lumbermill.http.HttpHandler;
 
-public class PostHandler<IN extends Event, OUT extends Event> implements Handler<RoutingContext> {
+class PostHandler<IN extends Event, OUT extends Event> implements Handler<RoutingContext> {
 
     public interface OnPostCreatedCallback<T extends Event> {
         void onCreated(T event);
@@ -44,27 +45,48 @@ public class PostHandler<IN extends Event, OUT extends Event> implements Handler
     public static final String EVENT_METADATA_HTTP_ROUTING_CONTEXT = "http.context";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostHandler.class);
-    private static final Map<String, Codec> codecs = new HashMap<String, Codec>() {
+    private static final Map<String, Supplier<HttpHandler>> codecs = new HashMap<String, Supplier<HttpHandler>>() {
         {
-            put("application/json", Codecs.JSON_ANY);
-            put("text/plain", Codecs.TEXT_TO_JSON);
-            put("default", Codecs.TEXT_TO_JSON);
+            put("application/json", new CodecHttpHandlerWrapper(Codecs.JSON_ANY));
+            put("text/plain", new CodecHttpHandlerWrapper(Codecs.TEXT_TO_JSON));
+            put("default", new CodecHttpHandlerWrapper(Codecs.TEXT_TO_JSON));
         }
     };
 
-    private final Optional<Supplier<Codec<IN>>> codec;
+
+    private static class CodecHttpHandlerWrapper extends AbstractHttpHandler {
+        public CodecHttpHandlerWrapper(Codec codec) {
+            super(codec);
+        }
+
+        @Override
+        public HttpHandler get() {
+            return this;
+        }
+    }
+
+    private final Optional<Supplier<HttpHandler<IN, ?>>> httpHandlerSupplier;
     private final OnPostCreatedCallback callback;
 
-    public PostHandler(Optional<Supplier<Codec<IN>>> codec, OnPostCreatedCallback callback) {
-        this.codec = codec;
+    public PostHandler(Supplier<HttpHandler<IN, ?>> httpHandlerSupplier, OnPostCreatedCallback callback) {
+        this.httpHandlerSupplier = Optional.of(httpHandlerSupplier);
         this.callback = callback;
+    }
 
+    public PostHandler(Codec<IN> codec, OnPostCreatedCallback callback) {
+        this.httpHandlerSupplier = Optional.of(new CodecHttpHandlerWrapper(codec));
+        this.callback = callback;
+    }
+
+    public PostHandler(OnPostCreatedCallback callback) {
+        this.httpHandlerSupplier = Optional.empty();
+        this.callback = callback;
     }
 
     public void handle(RoutingContext context) {
         try {
             String contentType = contentType(context.request());
-            Codec<IN> codec = codecFor(contentType);
+            HttpHandler<IN, ?> codec = codecFor(contentType);
 
             LOGGER.trace("Using Content-Type {} and path {}", contentType, context.request().path());
 
@@ -95,25 +117,18 @@ public class PostHandler<IN extends Event, OUT extends Event> implements Handler
                 || e instanceof IllegalArgumentException;
     }
 
-    private IN parseRequest(RoutingContext context, Codec<IN> codec) {
-        Buffer buffer = context.getBody();
+    private IN parseRequest(RoutingContext context, HttpHandler<IN, ?> httpHandler) {
 
-        IN e;
-        if (codec instanceof HttpHandler) {
-            PostRequestImpl postRequest = new PostRequestImpl(context);
-            context.put("postRequest", postRequest);
-
-            e = ((HttpHandler<IN, OUT>) codec).parse(postRequest);
-
-            context.put("httpHandler", codec);
-        } else {
-            e = codec.from(buffer.getBytes());
+        PostRequestImpl postRequest = new PostRequestImpl(context);
+        context.put("postRequest", postRequest);
+        IN e = httpHandler.parse(postRequest);
+        if (e == null) {
+            throw new IllegalStateException("HttpHandler returned null from parse() method, " +
+                    "please return an Event or throw an exception instead");
         }
-        if (e != null) {
-            extractRouteParamsAsMetadata(context, e);
-            e.put(EVENT_METADATA_HTTP_ROUTING_CONTEXT, context);
-        }
-        return e;
+        context.put("httpHandler", httpHandler);
+        extractRouteParamsAsMetadata(context, e);
+        return e.put(EVENT_METADATA_HTTP_ROUTING_CONTEXT, context);
     }
 
     private void extractRouteParamsAsMetadata(RoutingContext context, IN e) {
@@ -130,15 +145,15 @@ public class PostHandler<IN extends Event, OUT extends Event> implements Handler
         return contentType;
     }
 
-    private Codec<IN> codecFor(String contentTypeHeader) {
-        Codec<IN> codec;
-        if (this.codec.isPresent()) {
+    private HttpHandler<IN, ?> codecFor(String contentTypeHeader) {
+        HttpHandler<IN, ?> codec;
+        if (this.httpHandlerSupplier.isPresent()) {
             // Create new Codec
-            codec = this.codec.get().get();
+            codec = this.httpHandlerSupplier.get().get();
         } else {
             codec = codecs.containsKey(contentTypeHeader) ?
-                    codecs.get(contentTypeHeader) :
-                    codecs.get("default");
+                    codecs.get(contentTypeHeader).get() :
+                    codecs.get("default").get();
         }
         return codec;
     }

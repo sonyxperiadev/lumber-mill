@@ -2,7 +2,7 @@ build
 .idea
 .gradle
 *.iml
-.vertx
+.vertx/
 local.properties
 samples/getmore.groovy
 bin

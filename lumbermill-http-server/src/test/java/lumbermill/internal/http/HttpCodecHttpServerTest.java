@@ -17,6 +17,7 @@ package lumbermill.internal.http;
 
 import lumbermill.api.JsonEvent;
 import lumbermill.http.AbstractHttpHandler;
+import lumbermill.http.HttpHandler;
 import okio.ByteString;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,13 +38,12 @@ public class HttpCodecHttpServerTest extends AbstractHttpServerTest {
     String[] getPaths = {"/get"};
 
     String postPath = "/post";
-    String getPath = "/get";
 
     Http.Server server;
 
     @Before
     public void prepare() {
-        server =  prepare(TextToJsonHttpHandler.supplier(), postPaths, getPaths);
+        server =  prepare(new TextToJsonHttpHandler(), postPaths, getPaths);
     }
 
 
@@ -51,7 +51,7 @@ public class HttpCodecHttpServerTest extends AbstractHttpServerTest {
     public void test_post_text_creates_valid_json_for_each_request() throws InterruptedException {
         server.on(observable -> observable.doOnNext(subscriber().action1()));
 
-        post(postPath, "Hello", contentType, 200);
+        post(postPath, "Hello", contentType, 201);
 
         await().atMost(1, TimeUnit.SECONDS).until(subscriber().onNextInvoked(1));
     }
@@ -61,46 +61,31 @@ public class HttpCodecHttpServerTest extends AbstractHttpServerTest {
         server.on(observable -> observable
                 .map(Funcs.runtimeEx()).doOnTerminate(subscriber()));
 
-        post(postPath, "Hello", contentType, 500);
+        post(postPath, "Hello", contentType, 501);
 
         await().atMost(1, TimeUnit.SECONDS).until(subscriber().onCompletedInvoked());
     }
 
     static class TextToJsonHttpHandler extends AbstractHttpHandler<JsonEvent, JsonEvent> {
 
-        public static Supplier<TextToJsonHttpHandler> supplier() {
-            return () -> new TextToJsonHttpHandler();
+        TextToJsonHttpHandler() {
+            super(Codecs.TEXT_TO_JSON);
+        }
+
+
+        @Override
+        public void onError(Throwable e) {
+            req.response().setStatusCode(501).end();
         }
 
         @Override
-        public JsonEvent doParse(HttpPostRequest request) throws HttpCodecException {
-            //request.response().write("hello").setStatusCode(200);
-            return from(request.message());
+        public void onCompleted() {
+            req.response().setStatusCode(201).end();
         }
 
         @Override
-        public void onNext(Event o) {
-
-        }
-
-        @Override
-        public JsonEvent from(ByteString b) {
-            return Codecs.TEXT_TO_JSON.from(b);
-        }
-
-        @Override
-        public JsonEvent from(byte[] b) {
-            return Codecs.TEXT_TO_JSON.from(b);
-        }
-
-        @Override
-        public JsonEvent from(String s) {
-            return null;
-        }
-
-        @Override
-        public JsonEvent from(Event event) {
-            return from(event.raw()).withMetaData(event);
+        public HttpHandler<JsonEvent, JsonEvent> get() {
+            return new TextToJsonHttpHandler();
         }
     }
 

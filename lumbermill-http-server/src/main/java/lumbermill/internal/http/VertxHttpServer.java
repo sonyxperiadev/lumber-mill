@@ -14,6 +14,7 @@
  */
 package lumbermill.internal.http;
 
+import com.sun.org.apache.bcel.internal.classfile.Code;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
@@ -24,6 +25,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import lumbermill.Http;
 import lumbermill.api.Codec;
 import lumbermill.api.Event;
+import lumbermill.http.HttpHandler;
 import lumbermill.internal.MapWrap;
 import lumbermill.api.MetaDataEvent;
 import lumbermill.http.UnitOfWork;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 
@@ -123,14 +126,28 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
     private Http.Server setupRoute(MapWrap config) {
         String path   = config.asString("path");
         String method = config.asString("method");
-        Optional<Codec<T>> codec = config.getIfExists("codec");
+        Optional<Supplier<HttpHandler<T,?>>> handler = config.getIfExists("handler");
+        Optional<Codec<T>> codec = Optional.empty();
+
+        if (!handler.isPresent()) {
+            codec = config.getIfExists("codec");
+        }
         Optional<List<String>> tags = config.getIfExists("tags");
 
         LOGGER.debug("Setting up route, path: {}, method: {}", path, method);
 
         if (method.equalsIgnoreCase("POST")) {
             router.route().handler(BodyHandler.create());
-            router.post(path).handler(new PostHandler(codec, new PostCreatedCallback(tags)));
+            if (handler.isPresent()) {
+                LOGGER.info("Http handler found {}", handler.get().getClass().getSimpleName());
+                router.post(path).handler(new PostHandler(handler.get(), new PostCreatedCallback(tags)));
+            } else if (codec.isPresent()){
+                LOGGER.info("Codec found {}", codec.get());
+                router.post(path).handler(new PostHandler(codec.get(), new PostCreatedCallback(tags)));
+            } else {
+                LOGGER.info("No handler or codec found, using default handlers for content-type");
+                router.post(path).handler(new PostHandler(new PostCreatedCallback(tags)));
+            }
         } else if (method.equalsIgnoreCase("GET")) {
             router.get().path(path).handler(new GetHandler());
         }

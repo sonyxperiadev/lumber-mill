@@ -73,12 +73,12 @@ public class AbstractHttpServerTest <T extends Event>{
 
         for (String path : postPaths) {
             server.post(new HashMap<>(
-                    MapWrap.of("path", path, "codec", codec).toMap()));
+                    MapWrap.of("path", path, "handler", codec).toMap()));
         }
 
         for (String path : getPaths) {
             server.get(new HashMap<>(
-                    MapWrap.of("path", path, "codec", codec).toMap()));
+                    MapWrap.of("path", path, "handler", codec).toMap()));
         }
 
         return server;

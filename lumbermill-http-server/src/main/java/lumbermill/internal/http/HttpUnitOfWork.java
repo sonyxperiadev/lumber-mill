@@ -26,7 +26,7 @@ import lumbermill.api.Event;
 
 import java.util.UUID;
 
-public class HttpUnitOfWork<IN extends Event, OUT extends Event> implements UnitOfWork {
+public class HttpUnitOfWork<IN extends Event, OUT> implements UnitOfWork {
 
 
 

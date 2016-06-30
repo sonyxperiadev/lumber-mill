@@ -21,8 +21,14 @@ import lumbermill.api.Event;
 import okio.ByteString;
 
 
-public interface HttpHandler<REQ extends Event, RES extends Event> extends Codec {
+public interface HttpHandler<REQ extends Event, RES> {
 
+    /**
+     * Parse the request and return an Event, MUST not return null.
+     * @param request - Http Request
+     * @return An Event
+     * @throws HttpCodecException if unable to parse properly
+     */
     REQ parse(HttpPostRequest request) throws HttpCodecException;
 
     void onCompleted();
