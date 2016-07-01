@@ -8,3 +8,6 @@ dependencies {
 }
 
 
+apply plugin: 'application'
+mainClassName = 'lumbermill.boot.ScriptBootstrap'
+

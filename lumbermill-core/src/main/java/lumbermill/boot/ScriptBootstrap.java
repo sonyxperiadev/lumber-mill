@@ -37,13 +37,15 @@ public class ScriptBootstrap {
 
         if (args.length != 1) {
             LOG.info("Must have at least one config file as parameter");
-            return;
+            System.exit(0);
+            //return;
         }
 
         File file = new File(args[0]);
         if (!file.exists()) {
             LOG.info("File does not exist {}", file);
-            return;
+            System.exit(0);
+            //return;
         }
 
         LOG.info("Starting pipeline from file {}", file);
@@ -52,7 +54,8 @@ public class ScriptBootstrap {
             new ScriptBootstrap().loadFromScriptAsFile(file);
          } catch (RuntimeException e) {
             LOG.error("Unable to create pipeline", e);
-            throw new IllegalStateException(e);
+            System.exit(0);
+            //throw new IllegalStateException(e);
         }
     }
 

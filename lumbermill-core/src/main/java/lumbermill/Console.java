@@ -17,6 +17,7 @@ package lumbermill;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
+import lumbermill.internal.StringTemplate;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action;
@@ -36,6 +37,11 @@ public class Console<T extends Event> {
 
     public Action1<T> stdout() {
         return t -> System.out.println(t);
+    }
+
+    public Action1<T> stdout(String pattern) {
+        StringTemplate st = StringTemplate.compile(pattern);
+        return t -> System.out.println(st.format(t).get());
     }
 
     public Action1<List<T>> bstdout() {

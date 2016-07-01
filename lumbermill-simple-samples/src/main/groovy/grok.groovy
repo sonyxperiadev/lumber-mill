@@ -14,6 +14,7 @@
  */
 import lumbermill.Core
 import lumbermill.api.Codecs
+import lumbermill.api.JsonEvent
 import rx.Observable
 
 import static lumbermill.Core.*
@@ -27,7 +28,7 @@ import static lumbermill.Core.*
  *    "number" : 1,
  *    "text" : "times"
  * }
- *
+ * It says 1 in field number
  * </pre>
 */
 
@@ -40,6 +41,7 @@ Observable.just(Codecs.TEXT_TO_JSON.from("1 times"))
         )
     )
     .doOnNext(console.stdout())
+    .doOnNext(console.stdout('It says {number} in field number'))
     .toBlocking()
     .subscribe()
 

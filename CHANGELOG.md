@@ -2,6 +2,8 @@
 
 ### [Unreleased / master] Version 0.0.14-SNAPSHOT
 
+* Support for running with docker, including samples
+
 ### 0.0.13
 * Enhanced http-server functionality
 * JsonEvent has better support for numerical values
