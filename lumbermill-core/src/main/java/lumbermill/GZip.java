@@ -37,7 +37,7 @@ class GZip {
     private final static String DEFAULT_COMPRESS_OUTPUT_FIELD = "gzip_path_compressed";
     private final static String DEFAULT_DECOMPRESS_OUTPUT_FIELD = "gzip_path_decompressed";
 
-    public  <T extends Event>Func1<T,Observable<T>> compress(Map map) {
+    public  <T extends Event>Func1<T, Observable<T>> compress(Map map) {
 
         MapWrap parameters = MapWrap.of(map)
                 .assertExists("file");
@@ -55,7 +55,7 @@ class GZip {
         };
     }
 
-    public  <T extends Event>Func1<T,Observable<T>> decompress(Map map) {
+    public  <T extends Event>Func1<T, Observable<T>> decompress(Map map) {
 
         MapWrap parameters = MapWrap.of(map)
                 .assertExists("file");
@@ -74,17 +74,17 @@ class GZip {
     }
 
 
-    public  <T extends Event>Func1<T,T> compress() {
+    public  <T extends Event>Func1<T, Observable<T>> compress() {
         return t -> {
             LOGGER.debug("Compressing event");
-            return  (T) Codecs.BYTES.from(Streams.gzip(t.raw())).withMetaData(t);
+            return  Codecs.BYTES.from(Streams.gzip(t.raw())).withMetaData(t).toObservable();
         };
     }
 
-    public  <T extends Event>Func1<T,T> decompress() {
+    public  <T extends Event>Func1<T, Observable<T>> decompress() {
         return t -> {
             LOGGER.debug("decompressing event");
-            return (T) Codecs.BYTES.from(Streams.gunzip(t.raw())).withMetaData(t);
+            return Codecs.BYTES.from(Streams.gunzip(t.raw())).withMetaData(t).toObservable();
         };
     }
 }

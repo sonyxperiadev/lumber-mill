@@ -20,6 +20,7 @@ import lumbermill.api.Event;
 import lumbermill.internal.StringTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.functions.Func1;
 
 /**
@@ -45,7 +46,7 @@ class Fingerprint {
      * }
      * </pre>
      */
-    public static <E extends Event> Func1<E, E> md5(String sourcePattern) {
+    public static <E extends Event> Func1<E, Observable<E>> md5(String sourcePattern) {
         StringTemplate template = StringTemplate.compile(sourcePattern);
 
         return e -> {
@@ -55,7 +56,7 @@ class Fingerprint {
                 LOGGER.trace("Fingerprint of {} => {}", sourceValue, hashAsHex);
             }
             // as Metadata
-            return e.put("fingerprint", hashAsHex);
+            return e.put("fingerprint", hashAsHex).toObservable();
         };
     }
 
@@ -70,12 +71,12 @@ class Fingerprint {
      * }
      * </pre>
      */
-    public static <E extends Event> Func1<E, E> md5() {
+    public static <E extends Event> Func1<E, Observable<E>> md5() {
 
         return e -> {
             String hashOfContents = Hashing.md5().hashString(e.raw().utf8(), Charsets.UTF_8).toString();
             // as Metadata
-            return e.put("fingerprint", hashOfContents);
+            return e.put("fingerprint", hashOfContents).toObservable();
         };
     }
 }

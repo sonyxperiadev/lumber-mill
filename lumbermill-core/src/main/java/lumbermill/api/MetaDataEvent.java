@@ -15,6 +15,7 @@
 package lumbermill.api;
 
 import lumbermill.internal.MapWrap;
+import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,12 +67,17 @@ public abstract class MetaDataEvent implements Event {
         tagss.addAll(tags);
     }
 
-    public <T> T withMetaData(Event mde) {
+    public <T extends Event> T withMetaData(Event mde) {
         if (mde instanceof MetaDataEvent) {
             MetaDataEvent e = (MetaDataEvent)mde;
             this.map.putAll(e.map);
         }
         return (T) this;
+    }
+
+    @Override
+    public <T extends Event> Observable<T> toObservable() {
+        return Observable.just((T)this);
     }
 }
 

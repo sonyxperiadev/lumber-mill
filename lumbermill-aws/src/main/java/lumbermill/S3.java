@@ -36,8 +36,7 @@ import java.util.Optional;
     private static final Logger LOG = LoggerFactory.getLogger(S3.class);
 
     private final S3ClientFactory clientFactory = new S3ClientFactory();
-
-    private Codec<E> defaultRowCodec = (Codec<E>) Codecs.TEXT_TO_JSON;
+     
     private Codec<E> defaultEntityCodec = (Codec<E>) Codecs.BYTES;
 
 
@@ -76,7 +75,7 @@ import java.util.Optional;
     /**
      * Gets the complete S3Entity as a BytesEvent
      */
-    public Func1<E, E> get(Map<String, Object> config) {
+    public Func1<E, Observable<E>> get(Map<String, Object> config) {
 
         MapWrap conf = MapWrap.of(config)
                 .assertExists("bucket","key");
@@ -93,7 +92,7 @@ import java.util.Optional;
             ByteString raw = client.getAsBytes(sBucket, sKey);
             return codec.from(raw)
                     .put("key", sKey)
-                    .put("bucket_name", sBucket);
+                    .put("bucket_name", sBucket).toObservable();
         };
     }
 

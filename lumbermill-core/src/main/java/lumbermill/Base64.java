@@ -17,6 +17,7 @@ package lumbermill;
 import lumbermill.api.BytesEvent;
 import lumbermill.api.Event;
 import okio.ByteString;
+import rx.Observable;
 import rx.functions.Func1;
 
 /**
@@ -24,12 +25,12 @@ import rx.functions.Func1;
  */
 class Base64 {
 
-    public <T extends Event> Func1<T,T> encode() {
-        return t -> (T)new BytesEvent(ByteString.decodeBase64(t.raw().base64()));
+    public <T extends Event> Func1<T, Observable<T>> encode() {
+        return t -> new BytesEvent(ByteString.decodeBase64(t.raw().base64())).toObservable();
     }
 
-    public <T extends Event> Func1<T,T> decode() {
-        return t -> (T)new BytesEvent(ByteString.decodeBase64(t.raw().utf8()));
+    public <T extends Event> Func1<T,Observable<T>> decode() {
+        return t -> new BytesEvent(ByteString.decodeBase64(t.raw().utf8())).toObservable();
     }
 
 }

@@ -19,23 +19,24 @@ import lumbermill.api.Event;
 import lumbermill.internal.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.functions.Func1;
 
 class Zlib {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Zlib.class);
 
-    public  <T extends Event>Func1<T,T> compress() {
+    public  <T extends Event>Func1<T, Observable<T>> compress() {
         return t -> {
             LOGGER.trace("Compressing event");
-            return  (T) Codecs.BYTES.from(Streams.zlibCompress(t.raw()));
+            return  Codecs.BYTES.from(Streams.zlibCompress(t.raw())).toObservable();
         };
     }
 
-    public  <T extends Event>Func1<T,T> decompress() {
+    public  <T extends Event>Func1<T, Observable<T>> decompress() {
         return t -> {
             LOGGER.trace("Decompressing event");
-            return (T) Codecs.BYTES.from(Streams.zlibDecompress(t.raw()));
+            return Codecs.BYTES.from(Streams.zlibDecompress(t.raw())).toObservable();
         };
     }
 }

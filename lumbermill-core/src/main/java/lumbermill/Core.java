@@ -84,13 +84,13 @@ public class Core {
      * Parallelizes the call to the specified function with the events in the buffered list.
      * @param func - Target function
      */
-    public static <T extends Event> Func1<List<T>,List<T>> parallelize(Func1<T,T> func) {
+    public static <T extends Event> Func1<List<T>,Observable<List<T>>> parallelize(Func1<T,T> func) {
         return ts -> {
 
             List<Event> collect = ts.parallelStream()
                     .map(e1 -> func.call(e1))
                     .collect(toList());
-            return ts;
+            return Observable.just(ts);
         };
     }
 
@@ -100,12 +100,12 @@ public class Core {
      * @param func - Target function
      * @return
      */
-    public static <T extends Event> Func1<List<T>,List<T>> sequence(Func1<T, T> func) {
+    public static <T extends Event> Func1<List<T>,Observable<List<T>>> sequence(Func1<T, T> func) {
         return ts -> {
             List<Event> collect = ts.stream()
                     .map(e1 -> func.call(e1))
                     .collect(toList());
-            return ts;
+            return Observable.just(ts);
         };
     }
 
@@ -126,7 +126,7 @@ public class Core {
      * }
      * </pre>
      */
-    public static Func1<JsonEvent, JsonEvent> params(Map conf) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> params(Map conf) {
 
         MapWrap config = MapWrap.of(conf).assertExists("field");
         String field = config.asString("field");
@@ -134,7 +134,7 @@ public class Core {
 
         return jsonEvent -> {
             if (!jsonEvent.has(field)) {
-                return jsonEvent;
+                return jsonEvent.toObservable();
             }
 
             String field1 = jsonEvent.valueAsString(field);
@@ -147,7 +147,7 @@ public class Core {
                     jsonEvent.put(split[0], split[1]);
                 }
             }
-            return jsonEvent;
+            return jsonEvent.toObservable();
         };
     }
 
@@ -163,74 +163,74 @@ public class Core {
      * }
      * </pre>
      */
-    public  static <E extends Event> Func1<E, Observable<E>> computeIfTagExists(String tag, Closure cmd) {
+    public  static <E extends Event> Func1<E, Observable<E>> computeIfTagExists(String tag, Func1<E,?> cmd) {
         return e -> {
             if (e.hasTag(tag) ) {
                 return doCompute(cmd, e);
             }
-            return Observable.just(e);
+            return e.toObservable();
         };
     }
 
-    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagAbsent(String tag, Closure cmd) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfTagAbsent(String tag, Func1<JsonEvent,?> cmd) {
         return e -> {
             if (!e.hasTag(tag) ) {
                 return doCompute(cmd, e);
             }
-            return Observable.just(e);
+            return e.toObservable();
         };
     }
 
-    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfNotMatch(String field, String value, Closure cmd) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> computeIfNotMatch(String field, String value, Func1<JsonEvent,?> cmd) {
         final StringTemplate template = StringTemplate.compile(value);
         return e -> {
             if (e.has(field) || !e.valueAsString(field).matches(value)) {
                 return doCompute(cmd, e);
             }
-            return Observable.just(e);
+            return e.toObservable();
         };
     }
 
-    public static  Func1<JsonEvent, Observable<JsonEvent>> computeIfMatch(String field, String value, Closure cmd) {
+    public static  Func1<JsonEvent, Observable<JsonEvent>> computeIfMatch(String field, String value, Func1<JsonEvent,?> cmd) {
         final StringTemplate template = StringTemplate.compile(value);
         return e -> {
             if (e.has(field) && e.valueAsString(field).matches(value)) {
                 return doCompute(cmd, e);
             }
-            return Observable.just(e);
+            return e.toObservable();
         };
     }
 
-    public static <E extends Event> Func1<E, Observable<E>> computeIfExists(String field, Closure cmd) {
+    public static <E extends Event> Func1<E, Observable<E>> computeIfExists(String field, Func1<E,?> cmd) {
         return e -> {
 
             if (!e.has(field)) {
-                return Observable.just(e);
+                return e.toObservable();
             }
             return doCompute(cmd, e);
         };
     }
 
-    public static <E extends Event> Func1<E, Observable<E>> computeIfAbsent(String field, Closure cmd) {
+    public static <E extends Event> Func1<E, Observable<E>> computeIfAbsent(String field, Func1<E,?> cmd) {
         return e -> {
             if (e.has(field)) {
-                return Observable.just(e);
+                return e.toObservable();
             }
             return doCompute(cmd, e);
         };
     }
 
-    private static <E extends Event> Observable<E> doCompute(Closure cmd, E e) {
+    private static <E extends Event> Observable<E> doCompute(Func1<E,?> cmd, E e) {
 
             Object closureResult = cmd.call(e);
 
             // Can be null, just return original event
             if (closureResult == null) {
-                return Observable.just(e);
+                return e.toObservable();
             }
             // Could be an event, return it
             if (closureResult instanceof Event) {
-                return Observable.just((E) closureResult);
+                return e.toObservable();
             }
 
             // Could be an observable, simply return it
@@ -242,15 +242,15 @@ public class Core {
             if (closureResult instanceof Func1) {
                 Object result = ((Func1) closureResult).call(e);
                 if (result instanceof Event) {
-                    return Observable.just((E)result);
+                    return e.toObservable();
                 }
                 if (result instanceof Observable) {
-                    return (Observable)result;
+                    return e.toObservable();
                 }
             }
             LOG.warn("Unable to handle ifAbsent Closure, expected Event or Func1 but got {}",
                     closureResult.getClass());
-            return Observable.just(e);
+            return e.toObservable();
 
     }
 
@@ -301,21 +301,22 @@ public class Core {
         });
     }
 
-    public static Func1<JsonEvent, JsonEvent> remove(String... field) {
-        return jsonEvent -> jsonEvent.remove(field);
+    public static Func1<JsonEvent, Observable<JsonEvent>> remove(String... field) {
+        return jsonEvent -> jsonEvent.remove(field).toObservable();
     }
 
-    public static Func1<JsonEvent, JsonEvent> rename(Map map) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> rename(Map map) {
         MapWrap config = MapWrap.of(map).assertExists("from", "to");
         return rename(config.asString("from"), config.asString("to"), false);
     }
 
-    public static Func1<JsonEvent, JsonEvent> copy(Map map) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> copy(Map map) {
         MapWrap config = MapWrap.of(map).assertExists("from", "to");
         return rename(config.asString("from"), config.asString("to"), true);
     }
 
-    private static <E extends Event> Func1<JsonEvent,JsonEvent> rename(String fromField, String toField, boolean copy) {
+    private static <E extends Event> Func1<JsonEvent,Observable<JsonEvent>> rename(
+            String fromField, String toField, boolean copy) {
         return event -> {
             String value = event.valueAsString(fromField);
             if(value != null) {
@@ -324,57 +325,55 @@ public class Core {
                     event.remove(fromField);
                 }
             }
-            return event;
+            return event.toObservable();
         };
     }
 
 
-    public static Func1<JsonEvent,JsonEvent> timestampNow() {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampNow() {
         return jsonEvent -> jsonEvent.put("@timestamp", ZonedDateTime.now()
-                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)).toObservable();
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromMs(String from) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampFromMs(String from) {
         return timestampFromMs(from, "@timestamp");
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromSecs(String from) {
+    public static Func1<JsonEvent,Observable<JsonEvent>> timestampFromSecs(String from) {
         return timestampFromSecs(from, "@timestamp");
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromMs() {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampFromMs() {
         return timestampFromMs("@timestamp", "@timestamp");
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromSecs() {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampFromSecs() {
         return timestampFromSecs("@timestamp", "@timestamp");
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromSecs(String from, String to) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampFromSecs(String from, String to) {
         return e -> {
             if (! e.has(from)) {
-                return e;
+                return e.toObservable();
             }
             String format = ZonedDateTime.ofInstant(
                     Instant.ofEpochMilli(e.asLong(from) * 1000),
                     ZoneId.systemDefault())
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-            return e.put (to,
-                    format);
+            return e.put (to, format).toObservable();
         };
     }
 
-    public static Func1<JsonEvent,JsonEvent> timestampFromMs(String from, String to) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> timestampFromMs(String from, String to) {
         return e -> {
             if (! e.has(from)) {
-                return e;
+                return e.toObservable();
             }
             String format = ZonedDateTime.ofInstant(
                     Instant.ofEpochMilli(e.asLong(from)),
                     ZoneId.systemDefault())
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-            return e.put (to,
-                    format);
+            return e.put (to, format).toObservable();
         };
     }
 
@@ -382,7 +381,7 @@ public class Core {
      * FIXME - make sure this works properly
      *
      */
-    public static Func1<JsonEvent, JsonEvent> date(String field, String... formats) {
+    public static Func1<JsonEvent, Observable<JsonEvent>> date(String field, String... formats) {
 
         final List<DateTimeFormatter> formatters =
                 asList(formats).stream()
@@ -397,7 +396,7 @@ public class Core {
                     String isoDate = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(date);
                     jsonEvent.putMetaData("_@date", date);
                     jsonEvent.remove(field);
-                    return jsonEvent.put("@timestamp", isoDate);
+                    return jsonEvent.put("@timestamp", isoDate).toObservable();
                 } catch (RuntimeException e) {
                     if (LOG.isTraceEnabled()) {
                         LOG.trace("Failed to parse date {}", e.getMessage());
@@ -438,6 +437,7 @@ public class Core {
         return new RetryStrategyImpl();
     }
 
+
     public static <E extends Event> Func1<E, Boolean> hasField(String field) {
         return event -> event.has(field);
     }
@@ -446,61 +446,58 @@ public class Core {
     /**
      * Adds the specified field and String value to the event
      */
-    public static Func1<JsonEvent, JsonEvent> addField(String field, String value) {
-        return event ->
-            event.put(field, value);
+    public static Func1<JsonEvent, Observable<JsonEvent>> addField(String field, String value) {
+        return event -> event.put(field, value).toObservable();
     }
 
     /**
      * Adds the specified field and int value to the event
      */
-    public static Func1<JsonEvent,JsonEvent> addField(String field, int value) {
-        return event ->
-                event.put(field, value);
+    public static Func1<JsonEvent, Observable<JsonEvent>> addField(String field, int value) {
+        return event -> event.put(field, value).toObservable();
     }
 
     /**
      * Adds the specified field and boolean value to the event
      */
-    public static Func1<JsonEvent,JsonEvent> addField(String field, boolean value) {
-        return event ->
-                event.put(field, value);
+    public static Func1<JsonEvent, Observable<JsonEvent>> addField(String field, boolean value) {
+        return event -> event.put(field, value).toObservable();
     }
 
     /**
      * Adds the specified field and float value to the event
      */
-    public static Func1<JsonEvent,JsonEvent> addField(String field, float value) {
-        return event ->
-                event.put(field, value);
+    public static Func1<JsonEvent, Observable<JsonEvent>> addField(String field, float value) {
+        return event -> event.put(field, value).toObservable();
     }
 
     public static Func1<List<JsonEvent>, Observable<AnyJsonEvent>> toJsonArray() {
-        return events -> Observable.just(AnyJsonEvent.fromJsonEvents(events));
+        return events -> AnyJsonEvent.fromJsonEvents(events).toObservable();
     }
 
     /**
      * Decodes the event into a json array or node which is useful if you do not know
      * which type it is.
      */
-    public static <E extends Event> Func1<E, AnyJsonEvent> json() {
-        return e -> Codecs.JSON_ANY.from(e);
+    public static <E extends Event> Func1<E, Observable<AnyJsonEvent>> json() {
+
+        return e -> Codecs.JSON_ANY.from(e).toObservable();
     }
 
     /**
      * Decodes the event into a json object but will create a JsonObject from Codecs.TEXT_TO_JSON if
      * parsing json fails.
      */
-    public static <E extends Event> Func1<E, JsonEvent> toJsonObject(Map map) {
+    public static <E extends Event> Func1<E, Observable<JsonEvent>> toJsonObject(Map map) {
         MapWrap conf = MapWrap.of(map)
                 .assertExists("create_json_on_failure");
 
         return e -> {
             try {
-                return Codecs.JSON_OBJECT.from(e);
+                return Codecs.JSON_OBJECT.from(e).toObservable();
             } catch (JsonParseException ex) {
               if(conf.asBoolean("create_json_on_failure")) {
-                  return Codecs.TEXT_TO_JSON.from(e);
+                  return Codecs.TEXT_TO_JSON.from(e).toObservable();
               }
                 throw ex;
             }
@@ -510,8 +507,8 @@ public class Core {
     /**
      * Decodes the event into a json object, use this if your events are json.
      */
-    public static <E extends Event> Func1<E, JsonEvent> toJsonObject() {
-        return e -> Codecs.JSON_OBJECT.from(e);
+    public static <E extends Event> Func1<E, Observable<JsonEvent>> toJsonObject() {
+        return e -> Codecs.JSON_OBJECT.from(e).toObservable();
     }
 
     /**
@@ -548,7 +545,7 @@ public class Core {
      * }}
      * </pre>
      */
-    public static  Func1<JsonEvent, JsonEvent> extractJsonObject(Map map) {
+    public static  Func1<JsonEvent, Observable<JsonEvent>> extractJsonObject(Map map) {
         final MapWrap config = MapWrap.of(map).assertExists("field");
         final boolean merge = config.exists("merge")
                 ? config.asBoolean("merge")
@@ -563,20 +560,20 @@ public class Core {
                 JsonEvent childEvent = Codecs.JSON_OBJECT.from(shouldBeJson);
                 if (merge) {
                     jsonEvent.merge(childEvent);
-                    return jsonEvent;
+                    return jsonEvent.toObservable();
                 }
-                return childEvent;
+                return childEvent.toObservable();
             } catch (JsonParseException e) {
                     if (ignoreNonJson) {
                         LOG.debug("Got json parse when extracting {} from {}", config.asString("field"), jsonEvent.raw().utf8());
-                        return jsonEvent;
+                        return jsonEvent.toObservable();
                     }
                 throw e;
             }
         };
     }
 
-    public static  Func1<JsonEvent, JsonEvent> extractJsonObject(String field) {
+    public static  Func1<JsonEvent, Observable<JsonEvent>> extractJsonObject(String field) {
         return extractJsonObject(MapWrap.of("field", field).toMap());
     }
 
@@ -594,8 +591,8 @@ public class Core {
      * }
      * </pre>
      */
-    public static <E extends Event> Func1<E, JsonEvent> textToJson() {
-        return e -> Codecs.TEXT_TO_JSON.from(e);
+    public static <E extends Event> Func1<E, Observable<JsonEvent>> textToJson() {
+        return e -> Codecs.TEXT_TO_JSON.from(e).toObservable();
     }
 
 
@@ -603,14 +600,13 @@ public class Core {
      * Extracts json from a field in the JsonEvent, useful for extracting your data from some kind
      * of envelope.
      */
-    public static  Func1<JsonEvent, AnyJsonEvent> jsonOfField(String field) {
-        return e -> {
-            return e.child(field).withMetaData(e);
-        };
+    public static  Func1<JsonEvent, Observable<AnyJsonEvent>> jsonOfField(String field) {
+        return e -> e.child(field).withMetaData(e).toObservable();
     }
 
 
 
+    @Deprecated
     public static <T extends Event> Subscriber<T> wrap(Subscriber<T>... s) {
         return new Subscriber<T>() {
             @Override
@@ -630,6 +626,7 @@ public class Core {
         };
     }
 
+    @Deprecated
     public static <T extends Event> Func1<T,T> wrap(Func1<T, T> target) {
         return t -> {
             try {

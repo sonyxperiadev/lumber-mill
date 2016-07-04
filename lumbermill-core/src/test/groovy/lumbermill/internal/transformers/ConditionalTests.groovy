@@ -60,10 +60,11 @@ class ConditionalTests extends GroovyTestCase {
             )
             .flatMap (
                 computeIfAbsent('asdfasdf') {
-                    Codecs.BYTES.from("hello")
+                    Codecs.BYTES.from("hello").toObservable()
                 }
             )
             .doOnNext({BytesEvent e -> assertThat(e.raw().utf8()).isEqualTo("hello")})
+            .doOnError({ e -> e.printStackTrace()})
             .toBlocking().subscribe()
     }
 
@@ -101,7 +102,7 @@ class ConditionalTests extends GroovyTestCase {
             )
             .flatMap (
                 computeIfExists('message') {
-                    Codecs.BYTES.from("hello")
+                    Codecs.BYTES.from("hello").toObservable()
                 }
             )
             .doOnNext({BytesEvent e -> assertThat(e.raw().utf8()).isEqualTo("hello")})

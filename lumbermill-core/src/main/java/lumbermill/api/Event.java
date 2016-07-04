@@ -16,6 +16,7 @@ package lumbermill.api;
 
 
 import okio.ByteString;
+import rx.Observable;
 
 /**
  * An event is a single processing unit that passes the pipeline.
@@ -47,4 +48,6 @@ public interface Event {
     <T> T get(String key);
 
     <T extends Event> T addTag(String tag);
+
+    <T extends Event> Observable<T> toObservable();
 }

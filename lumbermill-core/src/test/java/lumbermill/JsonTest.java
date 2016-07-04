@@ -53,30 +53,38 @@ public class JsonTest {
 
     @Test
     public void test_decode_and_replace_field_from_string_to_json_event() {
-        JsonEvent mutatingEvent = Codecs.JSON_OBJECT.from(DECODED_CLOUDWATCH_LOGS_EVENT_WITH_JSON_MESSAGE);
-        mutatingEvent = Core.extractJsonObject(
-                MapWrap.of("field","message", "merge", false).toMap()).call(mutatingEvent);
-        assertThat(mutatingEvent.has("logGroup")).isFalse();
-        assertThat(mutatingEvent.has("logStream")).isFalse();
-        assertThat(mutatingEvent.has("thread")).isTrue();
-        assertThat(mutatingEvent.has("module")).isTrue();
-        assertThat(mutatingEvent.valueAsString("message")).isEqualTo("Got 12 records (5857 bytes)");
-        assertThat(mutatingEvent.valueAsString("@timestamp")).isEqualTo("2016-06-15T13:26:52.485Z");
+        Codecs.JSON_OBJECT.from(DECODED_CLOUDWATCH_LOGS_EVENT_WITH_JSON_MESSAGE)
+                .<JsonEvent>toObservable()
+                .flatMap (
+                        Core.extractJsonObject (
+                                MapWrap.of("field","message", "merge", false).toMap())
+                )
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("logGroup")).isFalse())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("logGroup")).isFalse())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("logStream")).isFalse())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("thread")).isTrue())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("module")).isTrue())
+                .doOnNext (jsonEvent -> assertThat(jsonEvent.valueAsString("@timestamp")).isEqualTo("2016-06-15T13:26:52.485Z"))
+                .doOnNext( jsonEvent -> assertThat(jsonEvent.valueAsString("message")).isEqualTo("Got 12 records (5857 bytes)"))
+                .subscribe();
 
     }
 
     @Test
     public void test_decode_non_json_ignore() {
-        JsonEvent mutatingEvent = Codecs.JSON_OBJECT.from(DECODED_CLOUDWATCH_LOGS_EVENT_WITH_JSON_MESSAGE);
-        mutatingEvent = Core.extractJsonObject(
-                MapWrap.of("field","logGroup", "merge", false, "ignoreNonJson", true).toMap()).call(mutatingEvent);
-        System.out.println(mutatingEvent);
-        assertThat(mutatingEvent.has("logGroup")).isTrue();
-        assertThat(mutatingEvent.has("logStream")).isTrue();
-        assertThat(mutatingEvent.has("thread")).isFalse();
-        assertThat(mutatingEvent.has("module")).isFalse();
-        assertThat(mutatingEvent.valueAsString("message")).startsWith("{");
-        assertThat(mutatingEvent.valueAsString("@timestamp")).isEqualTo("2016-06-15T13:26:52.49Z");
+        Codecs.JSON_OBJECT.from(DECODED_CLOUDWATCH_LOGS_EVENT_WITH_JSON_MESSAGE)
+                .<JsonEvent>toObservable()
+                .flatMap (
+                        Core.extractJsonObject(
+                                MapWrap.of("field","logGroup", "merge", false, "ignoreNonJson", true).toMap())
+                )
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("logGroup")).isTrue())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("logStream")).isTrue())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("thread")).isFalse())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.has("module")).isFalse())
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.valueAsString("message")).startsWith("{"))
+                .doOnNext(jsonEvent -> assertThat(jsonEvent.valueAsString("@timestamp")).isEqualTo("2016-06-15T13:26:52.49Z"))
+                .subscribe();
     }
 
     @Test(expected = JsonParseException.class)
@@ -95,10 +103,12 @@ public class JsonTest {
                 .subscribe();
     }
 
+
     @Test
     public void test_parse_failing_json_but_use_text_to_json_if_fails() {
-        Observable.just(Codecs.BYTES.from("This is not json"))
-                .map(Core.toJsonObject(MapWrap.of("create_json_on_failure", true).toMap()))
+        Codecs.BYTES.from("This is not json")
+                .toObservable()
+                .flatMap(Core.toJsonObject(MapWrap.of("create_json_on_failure", true).toMap()))
                 .doOnNext(jsonEvent -> assertThat(jsonEvent.has("message")))
                 .doOnNext(jsonEvent -> assertThat(jsonEvent.has("@timestamp")))
                 .toBlocking()
