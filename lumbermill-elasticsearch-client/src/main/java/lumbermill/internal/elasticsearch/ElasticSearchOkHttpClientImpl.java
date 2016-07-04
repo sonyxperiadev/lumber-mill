@@ -113,6 +113,7 @@ public class ElasticSearchOkHttpClientImpl {
     private Optional<RequestSigner> signer = Optional.empty();
 
     private Timer.Factory timerFactory = Observables.fixedTimer(2000);
+    private int retryAttempts = 20;
 
     public ElasticSearchOkHttpClientImpl(String esUrl, String index, String type, boolean isPrefix) {
         this.indexIsPrefix = isPrefix;
@@ -144,8 +145,9 @@ public class ElasticSearchOkHttpClientImpl {
         return this;
     }
 
-    public ElasticSearchOkHttpClientImpl withTimer(Timer.Factory timer) {
+    public ElasticSearchOkHttpClientImpl withRetryTimer(Timer.Factory timer, int attempts) {
         this.timerFactory = timer;
+        this.retryAttempts = attempts;
         return this;
     }
 
@@ -392,8 +394,6 @@ public class ElasticSearchOkHttpClientImpl {
      */
     private class RequestContext {
 
-        private static final int MAX = 20; // hmm... fingers crossed.
-
         public final ReplaySubject<ElasticSearchBulkResponseEvent> subject = ReplaySubject.createWithSize(1);;
 
         /**
@@ -425,7 +425,7 @@ public class ElasticSearchOkHttpClientImpl {
         }
 
         public boolean hasNextAttempt() {
-            return attempt.get() > MAX ? false : true;
+            return attempt.get() > ElasticSearchOkHttpClientImpl.this.retryAttempts ? false : true;
         }
 
 

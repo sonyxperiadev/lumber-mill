@@ -17,6 +17,7 @@ package lumbermill.api;
 import lumbermill.internal.ExponentialTimer;
 import lumbermill.internal.FixedTimer;
 import lumbermill.internal.LinearTimer;
+import lumbermill.internal.MapWrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -27,6 +28,10 @@ import rx.Observable;
 public class Observables {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Observables.class);
+
+    private final static int DEFAULT_DELAY_MS = 1000;
+    private final static int DEFAULT_FIXED_DELAY_ATTEMPTS = 3;
+    private final static int DEFAULT_EXPONENTIAL_SEED     = 2000;
 
     /**
      * Prepare values
@@ -40,15 +45,42 @@ public class Observables {
 
 
     public static Timer.Factory linearTimer(int delayMs) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Creating a new LinearTimer with delayMs {}", delayMs);
+        }
         return new LinearTimer(delayMs);
     }
 
-    public static Timer.Factory fixedTimer(int delayInMs) {
-        return new FixedTimer(delayInMs);
+    public static Timer.Factory fixedTimer(int delayMs) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Creating a new FixedTimer with delayMs {}", delayMs);
+        }
+        return new FixedTimer(delayMs);
     }
 
     public static Timer.Factory exponentialTimer(int seedDelayMs) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Creating a new ExponentialTimer with seed delayMs {}", seedDelayMs);
+        }
         return new ExponentialTimer(seedDelayMs);
+    }
+
+    /**
+     * Convenience method for creating a Timer.Factory from configuration
+     * Not sure it belongs here...
+     */
+    public static Timer.Factory timer(MapWrap retry) {
+        MapWrap mapWrap = retry.assertExists("policy");
+        String policy = mapWrap.get("policy");
+
+        if (policy.equals("linear")) {
+            return linearTimer(mapWrap.get("delayMs", DEFAULT_DELAY_MS));
+        } else if (policy.equals("fixed")) {
+            return fixedTimer(mapWrap.get("delayMs", DEFAULT_DELAY_MS));
+        } else if (policy.equals("exponential")) {
+            return exponentialTimer(mapWrap.get("delayMs", DEFAULT_EXPONENTIAL_SEED));
+        }
+        throw new IllegalStateException("Expected one of [linear, fixed, exponential] but got " + policy);
     }
 
 

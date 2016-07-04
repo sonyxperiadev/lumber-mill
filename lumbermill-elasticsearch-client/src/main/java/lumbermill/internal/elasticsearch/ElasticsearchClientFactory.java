@@ -14,6 +14,7 @@
  */
 package lumbermill.internal.elasticsearch;
 
+import lumbermill.api.Observables;
 import lumbermill.internal.MapWrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class ElasticsearchClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientFactory.class);
+    private static final int DEFAULT_ATTEMPTS = 20;
 
     private final Map<String, ElasticSearchOkHttpClientImpl> cachedClients = new HashMap<>();
 
@@ -73,6 +75,11 @@ public class ElasticsearchClientFactory {
 
         if (config.exists("timestamp_field")) {
             es.withTimestampField(config.asString("timestamp_field"));
+        }
+
+        if (config.exists("retry")) {
+            MapWrap retryConfig = MapWrap.of(config.get("retry")).assertExists("policy");
+            es.withRetryTimer(Observables.timer(retryConfig), retryConfig.get("attempts", DEFAULT_ATTEMPTS));
         }
         cachedClients.put(cacheKey, es);
 

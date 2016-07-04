@@ -34,7 +34,8 @@ public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTes
     public void test_index_100_documents_not_timestamped_index() throws InterruptedException {
 
         String indexName = UUID.randomUUID().toString();
-        bulkClient(MapWrap.of("index", indexName)).post (simpleEventsOfSize(100))
+        bulkClient(MapWrap.of("index", indexName, "retry", MapWrap.of("policy", "linear").toMap()))
+                .post (simpleEventsOfSize(100))
                 .doOnNext(elasticSearchBulkResponseEvent ->
                         await().atMost(3, TimeUnit.SECONDS).until(hitCountIs(100)))
                 .doOnNext(response -> assertThat(response.indexNames()).containsOnly(indexName))
