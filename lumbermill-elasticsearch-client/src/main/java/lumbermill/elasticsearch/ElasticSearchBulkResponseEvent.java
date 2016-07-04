@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.Json;
 import lumbermill.internal.elasticsearch.ElasticSearchBulkResponse;
+import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +62,9 @@ public class ElasticSearchBulkResponseEvent extends JsonEvent {
                 eventAndResponse);
     }
 
+    public Observable<JsonEvent> arguments() {
+        return Observable.from(eventAndResponse.keySet());
+    }
 
     private static ObjectNode buildJsonResponse(boolean hasErrors, Map<JsonEvent, JsonEvent> eventAndResponse) {
         ObjectNode node = Json.OBJECT_MAPPER.createObjectNode()

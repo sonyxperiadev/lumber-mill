@@ -38,6 +38,9 @@ public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTes
                 .doOnNext(elasticSearchBulkResponseEvent ->
                         await().atMost(3, TimeUnit.SECONDS).until(hitCountIs(100)))
                 .doOnNext(response -> assertThat(response.indexNames()).containsOnly(indexName))
+                // sanity, verify that original Json Events are returned properly
+                .flatMap(response -> response.arguments())
+                .doOnNext(event -> assertThat(event.valueAsString("message")).isEqualTo("Hello mighty mouse"))
                 .toBlocking()
                 .subscribe();
     }
