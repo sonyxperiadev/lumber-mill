@@ -1,19 +1,20 @@
 [![Build Status](https://travis-ci.org/sonyxperiadev/lumber-mill.svg?branch=master)](https://travis-ci.org/sonyxperiadev/lumber-mill) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.sonymobile/lumbermill-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.sonymobile/lumbermill-core)
 # Lumber Mill
 
-*A facility where logs are cut into lumber*
-
 *Lumber Mill is under heavy development/refactoring so expect api changes to occur*
-
-### Docs
-[Wiki](https://github.com/sonyxperiadev/lumber-mill/wiki/)
 
 ### What is Lumber Mill?
 Lumber Mills main purpose is to act as a Logstash / Beat when you want to collect logs on AWS infrastructure.
 Lumber Mill can easily be deployed as an AWS Lambda and subscribe to events from Cloudwatch Logs, S3 and Kinesis.
 
-You can also use Lumber MIll to create http adapters for ingesting data into AWS infrastructure or simply run Lumber Mill 
+You can also use Lumber Mill to create http adapters for ingesting data into AWS infrastructure or simply run Lumber Mill 
 scripts as one time jobs instead of using AWS Cli or similar.
+
+### Docs
+* [Wiki](https://github.com/sonyxperiadev/lumber-mill/wiki/)
+* Simple samples are in the lumbermill-simple-samples directory
+* AWS+Advanced Samples are in  [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples)
+* JavaDoc, but you will have to look in the code
 
 ### Code-As-Config
 Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline and are written in groovy.
@@ -31,7 +32,7 @@ Lumber Mill is the third generation of this project that we decided to open sour
 earlier versions in production for more than a year.
 
 ### Samples
-Samples are found in <https://github.com/sonyxperiadev/lumber-mill-samples> repository
+Samples are found in [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples) repository
 
 
 ### Changes
