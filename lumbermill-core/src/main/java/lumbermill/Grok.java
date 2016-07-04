@@ -24,7 +24,9 @@ import rx.functions.Func1;
 import java.util.List;
 import java.util.Map;
 
-class Grok<E extends Event> {
+public class Grok<E extends Event> {
+
+    protected Grok() {}
 
     /**
      * Extracts values from a string and adds those as key/value pairs

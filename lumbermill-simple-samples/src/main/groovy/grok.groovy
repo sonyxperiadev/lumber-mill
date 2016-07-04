@@ -32,7 +32,7 @@ import static lumbermill.Core.*
  * </pre>
 */
 
-Observable.just(Codecs.TEXT_TO_JSON.from("1 times"))
+Codecs.TEXT_TO_JSON.from("1 times").toObservable()
     .flatMap (
         Core.grok.parse (
             field       : 'message',
