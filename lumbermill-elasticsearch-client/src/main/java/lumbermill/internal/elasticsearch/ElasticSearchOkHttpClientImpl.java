@@ -23,8 +23,9 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
-import groovy.lang.Tuple2;
 import lumbermill.api.JsonEvent;
+import lumbermill.api.Observables;
+import lumbermill.api.Timer;
 import lumbermill.elasticsearch.ElasticSearchBulkRequestEvent;
 import lumbermill.elasticsearch.ElasticSearchBulkResponseEvent;
 import lumbermill.elasticsearch.FatalIndexException;
@@ -51,7 +52,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 
@@ -112,6 +112,8 @@ public class ElasticSearchOkHttpClientImpl {
 
     private Optional<RequestSigner> signer = Optional.empty();
 
+    private Timer.Factory timerFactory = Observables.fixedTimer(2000);
+
     public ElasticSearchOkHttpClientImpl(String esUrl, String index, String type, boolean isPrefix) {
         this.indexIsPrefix = isPrefix;
         try {
@@ -139,6 +141,11 @@ public class ElasticSearchOkHttpClientImpl {
      */
     public ElasticSearchOkHttpClientImpl withTimestampField(String field) {
         this.timestampField = field;
+        return this;
+    }
+
+    public ElasticSearchOkHttpClientImpl withTimer(Timer.Factory timer) {
+        this.timerFactory = timer;
         return this;
     }
 
@@ -196,13 +203,17 @@ public class ElasticSearchOkHttpClientImpl {
     private void handleResponse(RequestContext request, Response response) {
 
 
-
         if (response.code() == 200) {
             ElasticSearchBulkResponse bulkResponse = ElasticSearchBulkResponse.parse(
                     request.signableRequest, response);
             if (bulkResponse.hasErrors()) {
                 if (request.hasNextAttempt()) {
-                    post(request.nextAttempt(bulkResponse));
+                   request.nextAttempt(bulkResponse)
+                           .doOnNext(requestContext -> post(requestContext))
+                           .doOnError(throwable -> request.error(throwable))
+                           //.toBlocking()
+                           .subscribe();
+                    //post(request.nextAttempt(bulkResponse));
                 } else {
                     request.done(bulkResponse);
                 }
@@ -333,9 +344,6 @@ public class ElasticSearchOkHttpClientImpl {
         private final URL url;
         public final Map<String, String> headers;
 
-
-
-
         public ElasticSearchRequest(List<JsonEvent> events, URL url) {
             this.events = events;
             this.url = url;
@@ -405,6 +413,11 @@ public class ElasticSearchOkHttpClientImpl {
          */
         public AtomicInteger attempt = new AtomicInteger(1);
 
+        /**
+         * The timer for each request
+         */
+        public Timer timer = ElasticSearchOkHttpClientImpl.this.timerFactory.create();
+
         public RequestContext(List<JsonEvent> events, RequestSigner.SignableRequest signableRequest) {
             this.events = events;
             this.signableRequest = signableRequest;
@@ -416,7 +429,7 @@ public class ElasticSearchOkHttpClientImpl {
         }
 
 
-        public RequestContext nextAttempt(ElasticSearchBulkResponse result) {
+        public Observable<RequestContext> nextAttempt(ElasticSearchBulkResponse result) {
             updateResponseEvent(result);
             this.signableRequest = failedRecords(result);
             this.attempt.incrementAndGet();
@@ -425,14 +438,8 @@ public class ElasticSearchOkHttpClientImpl {
                 error(ex);
                 throw ex;
             }
-            // Wait a few ms until we try again
-            try {
-                LOGGER.debug("Waiting 500ms before next attempt ({})", attempt);
-                Thread.sleep(500); // To high? Configurable?
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return this;
+
+            return Observables.just(this).withDelay(timer);
         }
 
         private synchronized void updateResponseEvent(ElasticSearchBulkResponse bulkResponse) {

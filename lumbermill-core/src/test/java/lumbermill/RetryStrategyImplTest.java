@@ -97,7 +97,7 @@ public class RetryStrategyImplTest {
                 .retryOn(asList(retryOn))
                 .withExponentialDelay(MapWrap.of(
                         "attempts", withAttempts,
-                        "seed", 0.01).toMap());
+                        "seed", 1100).toMap());
     }
 
     private Func1<Observable<? extends Throwable>, Observable<?>> withLinearDelay(int withAttempts, Class<? extends Throwable>... retryOn) {

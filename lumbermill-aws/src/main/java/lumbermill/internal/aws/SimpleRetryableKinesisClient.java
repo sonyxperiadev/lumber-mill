@@ -21,6 +21,8 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
 import lumbermill.api.Event;
+import lumbermill.api.Observables;
+import lumbermill.api.Timer;
 import lumbermill.aws.FatalAWSException;
 import lumbermill.internal.StringTemplate;
 import org.slf4j.Logger;
@@ -52,12 +54,13 @@ public class SimpleRetryableKinesisClient<T extends Event> {
 
     private final StringTemplate partitionKeyTemplate;
 
+    private Timer.Factory timerFactory = Observables.fixedTimer(500);
+
     SimpleRetryableKinesisClient(AmazonKinesisAsync amazonKinesisClient, String stream, String partitionKey) {
         this.amazonKinesisClient = amazonKinesisClient;
         this.stream = stream;
         this.partitionKeyTemplate = StringTemplate.compile(partitionKey);
     }
-
     /**
      * Puts a single record to kinesis. It is recommended to always buffer into multiple
      * events and do putRecords instead.
@@ -110,12 +113,17 @@ public class SimpleRetryableKinesisClient<T extends Event> {
                         LOGGER.debug("Got {} failed records, retrying (attempts = {})",
                                 putRecordsResult.getFailedRecordCount(), request.attempt);
                         // Try again with failing records,
-                        Optional<RequestContext> nextAttempt = request.nextAttempt(putRecordsResult);
-                        if (nextAttempt.isPresent()) {
-                            putRecordsAsync(nextAttempt.get());
-                        } else {
-                            request.error(new FatalAWSException("Too many kinesis retries"));
-                        }
+                        //Optional<RequestContext> nextAttempt = request.nextAttempt(putRecordsResult);
+                        Observable<Optional<RequestContext>> observable = request.nextAttempt(putRecordsResult);
+                        observable.doOnNext(context -> {
+                            if (context.isPresent()) {
+                                putRecordsAsync(context.get());
+                            } else {
+                                request.error(new FatalAWSException("Too many kinesis retries"));
+                            }
+                        })
+                        .doOnError(throwable ->  request.error(throwable))
+                        .subscribe();
                     } else {
                         request.done();
                     }
@@ -144,7 +152,7 @@ public class SimpleRetryableKinesisClient<T extends Event> {
     /**
      * Contains state in order to track retries as well as returning response to pipeline.
      */
-    private static class RequestContext<E extends Event> {
+    private  class RequestContext<E extends Event> {
 
         private static final int MAX = 20; // Temporary until proper retry strategy
 
@@ -165,6 +173,8 @@ public class SimpleRetryableKinesisClient<T extends Event> {
          */
         public AtomicInteger attempt = new AtomicInteger(1);
 
+        private Timer timer = SimpleRetryableKinesisClient.this.timerFactory.create();
+
         public RequestContext(List<E> events, PutRecordsRequest putRecordsRequest) {
             this.events = events;
             this.putRecordsRequest = putRecordsRequest;
@@ -181,20 +191,14 @@ public class SimpleRetryableKinesisClient<T extends Event> {
          * @param result is the last result returned from Kinesis
          * @return RequestContext IF there are more attempts, Optional.empty() otherwise
          */
-        public Optional<RequestContext> nextAttempt(PutRecordsResult result) {
+        public Observable<Optional<RequestContext>> nextAttempt(PutRecordsResult result) {
             this.attempt.incrementAndGet();
             if (!hasNextAttempt()) {
-                return Optional.empty();
+                return Observable.just(Optional.empty());
             }
             this.putRecordsRequest = failedRecords(result);
 
-            // TODO - Implement retry strategy properly
-            try {
-                Thread.sleep(500); // To high? Configurable?
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return Optional.of(this);
+            return Observables.just(Optional.of(this)).withDelay(timer);
         }
 
         /**

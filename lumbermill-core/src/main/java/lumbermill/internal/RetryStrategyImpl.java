@@ -15,7 +15,9 @@
 package lumbermill.internal;
 
 import groovy.lang.Tuple2;
-import lumbermill.RetryStrategy;
+import lumbermill.api.RetryStrategy;
+import lumbermill.api.Observables;
+import lumbermill.api.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
@@ -27,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 
 public class RetryStrategyImpl implements RetryStrategy {
@@ -38,7 +39,7 @@ public class RetryStrategyImpl implements RetryStrategy {
 
     private final static int DEFAULT_FIXED_DELAY_MS       = 1000;
     private final static int DEFAULT_FIXED_DELAY_ATTEMPTS = 3;
-    private final static float DEFAULT_EXPONENTIAL_SEED     = 2.0f;
+    private final static int DEFAULT_EXPONENTIAL_SEED     = 2000;
 
     private final List<Class<? extends Throwable>> retryOn = new ArrayList<>();
 
@@ -73,14 +74,7 @@ public class RetryStrategyImpl implements RetryStrategy {
         MapWrap arguments = MapWrap.of(map);
         int attempts   = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
         int delayInMs  = arguments.get("delay",    DEFAULT_FIXED_DELAY_MS);
-
-        return errorNotification -> errorNotification
-                .doOnEach(throwable -> printException(throwable))
-                .zipWith(Observable.range(1, attempts), RetryStrategyImpl::create)
-                .flatMap(attempt ->
-                        attempt.getSecond() == attempts || !exceptionMatch(attempt.getFirst()) ?
-                                Observable.error(attempt.getFirst()) :
-                                linearDelayTimer(delayInMs, attempt.getSecond()));
+        return doCreate(attempts, Observables.linearTimer(delayInMs));
     }
 
     private void printException(Notification<?> notification) {
@@ -109,16 +103,23 @@ public class RetryStrategyImpl implements RetryStrategy {
         MapWrap arguments = MapWrap.of(map);
         int attempts   = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
         int delayInMs  = arguments.get("delay", DEFAULT_FIXED_DELAY_MS);
-
-        return errorNotification -> errorNotification
-                .doOnEach(throwable -> printException(throwable))
-                .zipWith(Observable.range(1, attempts), RetryStrategyImpl::create)
-                .flatMap(attempt ->
-                    attempt.getSecond() == attempts || !exceptionMatch(attempt.getFirst()) ?
-                        Observable.error(attempt.getFirst()) :
-                            fixedDelayTimer(delayInMs, attempt.getSecond()));
+        return doCreate(attempts, Observables.fixedTimer(delayInMs));
     }
 
+
+    private  Func1<Observable<? extends Throwable>, Observable<?>> doCreate(int attempts, Timer.Factory timerFactory) {
+        return errorNotification -> {
+            Timer timer = timerFactory.create();
+            return errorNotification
+                    .doOnEach(throwable -> printException(throwable))
+                    .zipWith(Observable.range(1, attempts), RetryStrategyImpl::create)
+                    .flatMap(attempt ->
+                            attempt.getSecond() == attempts || !exceptionMatch(attempt.getFirst()) ?
+                                    Observable.error(attempt.getFirst()) :
+                                    timer.next()
+                    );
+        };
+    }
 
     @Override
     public Func1<Observable<? extends Throwable>, Observable<?>> withExponentialDelay() {
@@ -129,43 +130,14 @@ public class RetryStrategyImpl implements RetryStrategy {
     @Override
     public Func1<Observable<? extends Throwable>, Observable<?>> withExponentialDelay(Map map) {
 
-        MapWrap arguments = MapWrap.of(map);
+        final MapWrap arguments = MapWrap.of(map);
 
         int attempts = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
-        float seed  = arguments.exists("seed") ? arguments.asFloat("seed") : DEFAULT_EXPONENTIAL_SEED;
+        int seedMs   = arguments.exists("seed") ? arguments.asInt("seed") : DEFAULT_EXPONENTIAL_SEED;
+        return doCreate(attempts, Observables.exponentialTimer(seedMs));
 
-        return errorNotification -> errorNotification
-                .doOnEach(throwable -> printException(throwable))
-                .zipWith(Observable.range(1, attempts), RetryStrategyImpl::create)
-                .flatMap(attempt ->
-                        attempt.getSecond() == attempts || !exceptionMatch(attempt.getFirst()) ?
-                                Observable.error(attempt.getFirst()) : exponentialTimer(seed, attempt.getSecond()));
     }
 
-
-    private static Observable<Long> fixedDelayTimer(int delayInMs, int attempt) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("(FixedDelay) Retrying operation in {} ms, attempt={})", delayInMs, attempt);
-        }
-        return Observable.timer(delayInMs, TimeUnit.MILLISECONDS);
-    }
-
-    private static Observable<Long> linearDelayTimer(int delayInMs, int attempt) {
-        int delay = delayInMs * attempt;
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("(LinearDelay) Retrying operation in {} ms (seedDelay={} attempt={})", delay, delayInMs, attempt);
-        }
-        return Observable.timer(delay, TimeUnit.MILLISECONDS);
-    }
-
-    private static Observable<Long> exponentialTimer(float seed, int attempt) {
-        long nextRetryDelay = (long) (Math.pow(seed, attempt) * 1000);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("(ExponentialDelay) Retrying operation in {} ms (seed={}, attempt={})", nextRetryDelay, seed, attempt);
-        }
-        return Observable.timer(nextRetryDelay,
-                TimeUnit.MILLISECONDS);
-    }
 
     private static Tuple2<Throwable, Integer> create(Throwable t, int attempt) {
         return new Tuple2<>(t, attempt);

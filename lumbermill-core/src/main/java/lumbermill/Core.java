@@ -19,6 +19,7 @@ import lumbermill.api.AnyJsonEvent;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
+import lumbermill.api.RetryStrategy;
 import lumbermill.internal.JsonParseException;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.RetryStrategyImpl;
