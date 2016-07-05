@@ -23,6 +23,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lumbermill.api.Observables;
 import lumbermill.internal.MapWrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class KinesisClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KinesisClientFactory.class);
 
-    private static final String DEFAULT_PARTITION_KEY = "default";
+    private static final int DEFAULT_ATTEMPTS = 20;
 
     private Map<String, SimpleRetryableKinesisClient> clients = new HashMap<>();
 
@@ -56,8 +57,15 @@ public class KinesisClientFactory {
         SimpleRetryableKinesisClient simpleRetryableKinesisClient = new SimpleRetryableKinesisClient(getAsyncClient(parameters),
                 parameters.asString("stream"),
                 //TODO: Consider forcing user to specify partition key
-                parameters.get("partition_key", DEFAULT_PARTITION_KEY));
+                parameters.getIfExists("partition_key"));
         clients.put(parameters.asString("stream"), simpleRetryableKinesisClient);
+
+        if (parameters.exists("retry")) {
+            MapWrap retryConfig = MapWrap.of(parameters.get("retry")).assertExists("policy");
+            simpleRetryableKinesisClient.withRetryTimer(Observables.timer(retryConfig),
+                    retryConfig.get("attempts", DEFAULT_ATTEMPTS));
+        }
+
         return simpleRetryableKinesisClient;
     }
 
@@ -104,6 +112,8 @@ public class KinesisClientFactory {
         if (configuration.exists("endpoint")) {
             kinesisClient.setEndpoint(configuration.get("endpoint"));
         }
+
+
 
         return kinesisClient;
     }

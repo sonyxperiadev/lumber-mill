@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 
@@ -52,22 +53,38 @@ public class SimpleRetryableKinesisClient<T extends Event> {
 
     private final String stream;
 
-    private final StringTemplate partitionKeyTemplate;
+    private final Optional<Supplier<StringTemplate>> partitionKeySupplier;
 
     private Timer.Factory timerFactory = Observables.fixedTimer(500);
+    private int maxAttempts;
 
-    SimpleRetryableKinesisClient(AmazonKinesisAsync amazonKinesisClient, String stream, String partitionKey) {
+    SimpleRetryableKinesisClient(AmazonKinesisAsync amazonKinesisClient, String stream, Optional<String> partitionKey) {
         this.amazonKinesisClient = amazonKinesisClient;
         this.stream = stream;
-        this.partitionKeyTemplate = StringTemplate.compile(partitionKey);
+
+        if (partitionKey.isPresent()) {
+            this.partitionKeySupplier = Optional.of(new Supplier<StringTemplate>() {
+                final StringTemplate partitionKeyTemplate = StringTemplate.compile(partitionKey.get());
+
+                @Override
+                public StringTemplate get() {
+                    return partitionKeyTemplate;
+                }
+            });
+        } else {
+            this.partitionKeySupplier = Optional.empty();
+        }
     }
+
     /**
      * Puts a single record to kinesis. It is recommended to always buffer into multiple
      * events and do putRecords instead.
      */
     public Observable<T> putRecord(T event) {
         amazonKinesisClient.putRecord(stream, event.raw().asByteBuffer(),
-                partitionKeyTemplate.format(event).get());
+                partitionKeySupplier.isPresent()
+                        ? partitionKeySupplier.get().get().format(event).get()
+                        : UUID.randomUUID().toString());
         return Observable.just(event);
     }
 
@@ -139,13 +156,20 @@ public class SimpleRetryableKinesisClient<T extends Event> {
      * Converts event to actual kinesis entry type
      */
     private PutRecordsRequestEntry toRecordEntries(T event) {
-        Optional<String> partitionKey = partitionKeyTemplate.format(event);
+        //Optional<String> partitionKey = partitionKeyTemplate.format(event);
         return new PutRecordsRequestEntry().withData (
                 event.raw().asByteBuffer())
                 // FIXME: If partitionkey does not return a value, what approach is best?
-                .withPartitionKey(partitionKey.isPresent()
-                        ? partitionKey.get()
+                .withPartitionKey(partitionKeySupplier.isPresent()
+                        ? partitionKeySupplier.get().get().format(event).get()
                         : UUID.randomUUID().toString());
+    }
+
+    public SimpleRetryableKinesisClient withRetryTimer(Timer.Factory timer, int attempts) {
+        this.timerFactory = timer;
+        this.maxAttempts = attempts;
+        return this;
+
     }
 
 
@@ -153,8 +177,6 @@ public class SimpleRetryableKinesisClient<T extends Event> {
      * Contains state in order to track retries as well as returning response to pipeline.
      */
     private  class RequestContext<E extends Event> {
-
-        private static final int MAX = 20; // Temporary until proper retry strategy
 
         public final ReplaySubject<List<E>> subject = ReplaySubject.createWithSize(1);
 
@@ -181,7 +203,7 @@ public class SimpleRetryableKinesisClient<T extends Event> {
         }
 
         private boolean hasNextAttempt() {
-            return attempt.get() > MAX ? false : true;
+            return attempt.get() > SimpleRetryableKinesisClient.this.maxAttempts ? false : true;
         }
 
 
