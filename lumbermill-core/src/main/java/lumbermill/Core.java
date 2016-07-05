@@ -447,7 +447,8 @@ public class Core {
      * Adds the specified field and String value to the event
      */
     public static Func1<JsonEvent, Observable<JsonEvent>> addField(String field, String value) {
-        return event -> event.put(field, value).toObservable();
+        StringTemplate st = StringTemplate.compile(value);
+        return event -> event.put(field, st.format(event).get()).toObservable();
     }
 
     /**

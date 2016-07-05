@@ -70,21 +70,43 @@ public class StringTemplate {
      * that is not present in the event.
      */
     public Optional<String> format(Event event) {
+
         if (fields.size() > 0) {
 
             String newExpression = pattern;
             boolean foundField = false;
             for( SimpleField field : fields) {
                 if (event.has(field.name)) {
-                    newExpression = newExpression.replace(
+                    newExpression = newExpression.replace (
                             String.format("{%s}", field.name),
                             String.format("%s", event.valueAsString(field.name)));
                     foundField = true;
                     newExpression = field.valueOf(newExpression);
                 } else {
-                    LOGGER.trace("Event has no field: {}", field.name);
+                    String property = System.getProperty(field.name);
+                    if (property != null) {
+                        foundField = true;
+                        newExpression = newExpression.replace (
+                                String.format("{%s}", field.name),
+                                String.format("%s", property));
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Value for field {} was found as system property", field.name);
+                        }
+                    } else {
+                        String env = System.getenv(field.name);
+                        if (env != null) {
+                            foundField = true;
+                            newExpression = newExpression.replace(
+                                    String.format("{%s}", field.name),
+                                    String.format("%s", env));
+                            if (LOGGER.isTraceEnabled()) {
+                                LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                            }
+                        }
+                    }
                 }
             }
+
             return foundField ?
                     Optional.of(newExpression) :
                     Optional.<String>empty();

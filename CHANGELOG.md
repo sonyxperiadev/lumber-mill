@@ -2,6 +2,8 @@
 
 ### [Unreleased / master] Version 0.0.14-SNAPSHOT
 
+* Support for reading System property and System environment variable with StringTemplate
+* Partition key for kinesis is now random if not specified
 * Added http dispatcher configuration for Elasticsearch
 * Retry configuration is now available for Elasticsearch
 * Functions with side-effects are now returning Observable<Event> instead of Event to have make the API

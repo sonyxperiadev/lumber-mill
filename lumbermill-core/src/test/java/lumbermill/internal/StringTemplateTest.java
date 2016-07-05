@@ -18,6 +18,7 @@ package lumbermill.internal;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import lumbermill.Core;
 import org.junit.Test;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
@@ -61,6 +62,16 @@ public class StringTemplateTest {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    @Test
+    public void testExtractSystemProperty() {
+        System.setProperty("field", "value");
+        Codecs.TEXT_TO_JSON.from("hello world")
+                .<JsonEvent>toObservable()
+                .flatMap(Core.addField("field", "Hej hopp {field}"))
+                .doOnNext( o -> assertThat(o.valueAsString("field")).isEqualTo("Hej hopp value"))
+                .subscribe();
     }
 
 
