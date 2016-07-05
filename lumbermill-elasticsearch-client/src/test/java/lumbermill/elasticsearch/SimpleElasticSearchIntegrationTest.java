@@ -17,16 +17,23 @@ package lumbermill.elasticsearch;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.elasticsearch.ElasticSearchOkHttpClientImpl;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static java.time.ZonedDateTime.now;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
 public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTest {
 
@@ -96,5 +103,20 @@ public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTes
         bulkClient.post(simpleEventsOfSizeAndRandomField(1,"uuid")).doOnNext( response ->
                     await().atMost(3, TimeUnit.SECONDS).until(hitCountIs(101)))
                 .subscribe();
+    }
+
+    @Test
+    public void test_dispatcher_config_settings() {
+        ExecutorService mock = Mockito.mock(ExecutorService.class);
+        when(mock.submit(any(Runnable.class))).thenThrow(IllegalStateException.class);
+        ElasticSearchOkHttpClientImpl elasticSearchOkHttpClient = bulkClient(
+                MapWrap.of( "index_prefix", "index-",
+                        "retry", MapWrap.of("policy", "linear", "delayMs", 100).toMap(),
+                        "dispatcher", MapWrap.of("threadpool", mock, "max_concurrent_requests", 1).toMap())
+        );
+        assertThat(elasticSearchOkHttpClient.client().getDispatcher().getMaxRequests()).isEqualTo(1);
+        assertThat(elasticSearchOkHttpClient.client().getDispatcher().getMaxRequestsPerHost()).isEqualTo(1);
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() ->
+               elasticSearchOkHttpClient.client().getDispatcher().getExecutorService().submit((Runnable) () -> {}));
     }
 }

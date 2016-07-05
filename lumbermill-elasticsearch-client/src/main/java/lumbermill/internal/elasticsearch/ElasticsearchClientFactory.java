@@ -14,6 +14,7 @@
  */
 package lumbermill.internal.elasticsearch;
 
+import com.squareup.okhttp.Dispatcher;
 import lumbermill.api.Observables;
 import lumbermill.internal.MapWrap;
 import org.slf4j.Logger;
@@ -81,6 +82,22 @@ public class ElasticsearchClientFactory {
             MapWrap retryConfig = MapWrap.of(config.get("retry")).assertExists("policy");
             es.withRetryTimer(Observables.timer(retryConfig), retryConfig.get("attempts", DEFAULT_ATTEMPTS));
         }
+
+        if (config.exists("dispatcher")) {
+            LOGGER.info("Configuring http dispatcher");
+            MapWrap dispatchConfig = MapWrap.of(config.get("dispatcher"));
+            Dispatcher dispatcher = dispatchConfig.exists("threadpool")
+                    ? new Dispatcher(dispatchConfig.get("threadpool"))
+                    : new Dispatcher();
+            dispatcher.setMaxRequests(dispatchConfig.exists("max_concurrent_requests")
+                    ? dispatchConfig.get("max_concurrent_requests")
+                    : dispatcher.getMaxRequests());
+            dispatcher.setMaxRequestsPerHost(dispatchConfig.exists("max_concurrent_requests")
+                    ? dispatchConfig.get("max_concurrent_requests")
+                    : dispatcher.getMaxRequestsPerHost());
+            es.withDispatcher(dispatcher);
+        }
+
         cachedClients.put(cacheKey, es);
 
         return es;

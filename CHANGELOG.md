@@ -2,12 +2,14 @@
 
 ### [Unreleased / master] Version 0.0.14-SNAPSHOT
 
-* Support for running with docker, including samples
-* Refactored the api of working with timers and delay (FixedDelay, LinearDelay, ExponentialDelay), they
-are now part of the API and not part of the RetryStrategy. Simple to create custom timers for delay. Fixes #14
+* Added http dispatcher configuration for Elasticsearch
+* Retry configuration is now available for Elasticsearch
 * Functions with side-effects are now returning Observable<Event> instead of Event to have make the API
 simpler but this also makes it easier to evolve functions. **This breaks API, you have to change from map() 
 to flatMap() for some functions**. Fixes #12
+* Refactored the api of working with timers and delay (FixedDelay, LinearDelay, ExponentialDelay), they
+are now part of the API and not part of the RetryStrategy. Simple to create custom timers for delay. Fixes #14
+* Support for running with docker, including samples
 * Added Java Grok sample to samples
 
 ### 0.0.13

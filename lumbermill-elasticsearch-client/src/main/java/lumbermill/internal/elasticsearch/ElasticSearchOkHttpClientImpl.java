@@ -17,6 +17,7 @@ package lumbermill.internal.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.Dispatcher;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
@@ -86,9 +87,8 @@ public class ElasticSearchOkHttpClientImpl {
     /**
      * Http client is shared
      */
-    private final static OkHttpClient client = new OkHttpClient();
-
-    static {
+    private final OkHttpClient client = new OkHttpClient();
+     {
         String https_proxy = System.getenv("https_proxy");
         // Support for empty value as well as null
         if (StringUtils.isNotEmpty(https_proxy)) {
@@ -127,6 +127,13 @@ public class ElasticSearchOkHttpClientImpl {
         this.type  = StringTemplate.compile(type);
     }
 
+    /**
+     * Provides access to the underlying http client, useful in tests and
+     * to customize things we have not thought about.
+     */
+    public OkHttpClient client() {
+        return client;
+    }
 
     /**
      * Set AWS Signer if using AWS Elasticsearch as service with identity based access
@@ -150,6 +157,13 @@ public class ElasticSearchOkHttpClientImpl {
         this.retryAttempts = attempts;
         return this;
     }
+
+
+    public ElasticSearchOkHttpClientImpl withDispatcher(Dispatcher dispatcher) {
+        this.client.setDispatcher(dispatcher);
+        return this;
+    }
+
 
     /**
      * Set the _id of each document in bulk, supports StringTemplate.
@@ -315,6 +329,19 @@ public class ElasticSearchOkHttpClientImpl {
                 .post(body)
                 .headers(Headers.of(requestCtx.signableRequest.headers()))
                 .build();
+
+        // Add some sanity logging to be able to figure out the load
+        if (LOGGER.isDebugEnabled()) {
+            int requestsInQueue    = client.getDispatcher().getQueuedCallCount();
+            int requestsInProgress = client.getDispatcher().getRunningCallCount();
+            if (requestsInQueue > 0) {
+                LOGGER.debug("There are {} requests waiting to be processed", requestsInQueue);
+            }
+            if (requestsInProgress > 0) {
+                LOGGER.debug("There are {} requests currently executing", requestsInProgress);
+            }
+        }
+
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
