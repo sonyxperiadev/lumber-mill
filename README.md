@@ -10,14 +10,13 @@ Lumber Mill can easily be deployed as an AWS Lambda and subscribe to events from
 You can also use Lumber Mill to create http adapters for ingesting data into AWS infrastructure or simply run Lumber Mill 
 scripts as one time jobs instead of using AWS Cli or similar.
 
-### Docs
+### Documentation
 * [Wiki](https://github.com/sonyxperiadev/lumber-mill/wiki/)
 * Simple samples are in the lumbermill-simple-samples directory
 * AWS+Advanced Samples are in  [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples)
-* JavaDoc, but you will have to look in the code
 
 ### Code-As-Config
-Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline and are written in groovy.
+Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline. You write Lumber-Mill scripts in groovy or java (scala, clojure and other jvm languages "probably" works as well but have not been explored).
 
 ### Goals
 * Lumber Mill is not trying to replace Logstash or Beats or any other log collecting framework. 
