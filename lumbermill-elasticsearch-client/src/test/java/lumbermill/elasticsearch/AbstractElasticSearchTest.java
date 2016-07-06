@@ -110,11 +110,15 @@ public abstract class AbstractElasticSearchTest {
         return () -> findAll().response.getHits().totalHits() == hitCount;
     }
 
-    protected List<JsonEvent> simpleEventsOfSize(int count) {
+    protected List<JsonEvent> simpleEventsOfSize(int count,boolean assignUuid) {
 
         ArrayList<JsonEvent> events = Lists.newArrayList();
         for (int i = 0; i < count; i++) {
-            events.add(Codecs.TEXT_TO_JSON.from("Hello mighty mouse"));
+            JsonEvent from = Codecs.TEXT_TO_JSON.from("Hello mighty mouse");
+            if (assignUuid) {
+                from.put("uuid",  UUID.randomUUID().getLeastSignificantBits());
+            }
+            events.add(from);
         }
         return events;
     }

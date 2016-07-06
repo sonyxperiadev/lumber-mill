@@ -17,7 +17,6 @@ package lumbermill.elasticsearch;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.elasticsearch.ElasticSearchOkHttpClientImpl;
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -25,13 +24,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static java.time.ZonedDateTime.now;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -42,11 +40,13 @@ public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTes
 
         String indexName = UUID.randomUUID().toString();
         bulkClient(MapWrap.of("index", indexName, "retry", MapWrap.of("policy", "linear").toMap()))
-                .post (simpleEventsOfSize(100))
+                .post (simpleEventsOfSize(100, true))
+                .doOnNext( elasticSearchBulkResponseEvent-> assertThat(elasticSearchBulkResponseEvent.count()).isEqualTo(100))
                 .doOnNext(elasticSearchBulkResponseEvent ->
                         await().atMost(3, TimeUnit.SECONDS).until(hitCountIs(100)))
                 .doOnNext(response -> assertThat(response.indexNames()).containsOnly(indexName))
                 // sanity, verify that original Json Events are returned properly
+
                 .flatMap(response -> response.arguments())
                 .doOnNext(event -> assertThat(event.valueAsString("message")).isEqualTo("Hello mighty mouse"))
                 .toBlocking()
@@ -54,9 +54,22 @@ public class SimpleElasticSearchIntegrationTest extends AbstractElasticSearchTes
     }
 
     @Test
+    public void test_index_100_documents_verify_bug_where_incorrect_result_is_returned() throws InterruptedException {
+
+        String indexName = UUID.randomUUID().toString();
+        bulkClient(MapWrap.of("index", indexName))
+                .post (simpleEventsOfSize(100, false))
+                .doOnNext( elasticSearchBulkResponseEvent-> assertThat(elasticSearchBulkResponseEvent.count())
+                        // With this bug this will be less then we want
+                        .isLessThan(100))
+                .toBlocking()
+                .subscribe();
+    }
+
+    @Test
     public void test_index_100_documents_timestamped() throws InterruptedException {
         String indexName = UUID.randomUUID().toString() + "-";
-        bulkClient(MapWrap.of("index_prefix", indexName)).post (simpleEventsOfSize(100))
+        bulkClient(MapWrap.of("index_prefix", indexName)).post (simpleEventsOfSize(100, true))
                 .doOnNext(elasticSearchBulkResponseEvent ->
                         await().atMost(3, TimeUnit.SECONDS).until(hitCountIs(100)))
                 .doOnNext(response -> assertThat(response.indexNames())

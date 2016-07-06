@@ -138,6 +138,10 @@ public class ElasticSearchBulkResponseEvent extends JsonEvent {
         return indices;
     }
 
+    public int count() {
+        return super.jsonNode.get("items").size();
+    }
+
     /**
      * Elasticsearch returns "create" if an entry was created and "index" if it was updated.
      */
