@@ -1,6 +1,6 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.14-SNAPSHOT
+### 0.0.14
 
 * Support for reading System property and System environment variable with StringTemplate
 * Partition key for kinesis is now random if not specified
