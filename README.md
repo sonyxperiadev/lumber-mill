@@ -37,43 +37,6 @@ Samples are found in [https://github.com/sonyxperiadev/lumber-mill-samples](http
 ### Changes
 [View Changelog](CHANGELOG.md)
 
-### Lambda Cloudwatch Logs to AWS Elasticsearch sample
-
-```groovy
-class CloudWatchLogsToKinesisEventProcessor implements EventProcessor {
-
-    Observable<Event> call(Observable observable) {
-        
-        observable.compose (
-            new CloudWatchLogsEventPreProcessor()
-        )
-        
-        .flatMap (
-            grok.parse (
-                field: 'message',
-                pattern: '%{AWS_LAMBDA_REQUEST_REPORT}',
-                tagOnFailure: false
-            )
-        )
-        
-        .map ( 
-            addField ( 'type','cloudwatchlogs')
-         )
-         
-        .buffer (100)
-        .flatMap (
-            AWS.elasticsearch.client (
-                url:          'your_aws_elasticsearch_endpoint',
-                index_prefix: 'myindex-',
-                type:         '{type}',
-                document_id:  '{id}',
-                region: 'eu-west-1' 
-            )
-        )
-    }
-}
-```
-
 ### Build
 
     ./gradlew clean build
