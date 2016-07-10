@@ -15,6 +15,7 @@
 import lumbermill.api.Codecs
 import lumbermill.api.JsonEvent
 import lumbermill.aws.lambda.CloudWatchLogsEventPreProcessor
+import org.junit.Test
 import rx.Observable
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -30,7 +31,7 @@ class CloudwatchLogsEventPreProcessorTest extends GroovyTestCase {
         '  }\n' +
         '}'
 
-
+    @Test
     def void test_plain_text() {
         Observable.just(Codecs.JSON_OBJECT.from(EVENT))
             .compose(new CloudWatchLogsEventPreProcessor())
