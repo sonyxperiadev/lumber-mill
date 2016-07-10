@@ -37,9 +37,9 @@ class CloudWatchLogsEventPreProcessor implements EventProcessor {
                 return Codecs.BYTES.from (
                     jsonEvent.objectChild("awslogs").valueAsString("data"))
         }
-        .map ( base64.decode())
-        .map ( gzip.decompress())
-        .map ( toJsonObject())
+        .flatMap ( base64.decode())
+        .flatMap ( gzip.decompress())
+        .flatMap ( toJsonObject())
 
         .flatMap { JsonEvent event ->
 
@@ -53,7 +53,7 @@ class CloudWatchLogsEventPreProcessor implements EventProcessor {
                         .put('logStream',logStream)
             }
         }
-        .map ( timestampFromMs('timestamp'))
-        .map ( remove('timestamp'))
+        .flatMap ( timestampFromMs('timestamp'))
+        .flatMap ( remove('timestamp'))
     }
 }
