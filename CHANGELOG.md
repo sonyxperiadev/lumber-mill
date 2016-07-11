@@ -1,6 +1,11 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.15-SNAPSHOT
+### [Unreleased / master] Version 0.0.16-SNAPSHOT
+
+### 0.0.15
+
+* Fixed serious bug in CloudwatchLogsEventPreProcessor, **was introduced in 0.0.14**
+* Count method added to Elasticsearch response event
 
 ### 0.0.14
 
