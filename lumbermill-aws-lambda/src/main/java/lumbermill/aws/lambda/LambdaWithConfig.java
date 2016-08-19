@@ -22,6 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Utility class to read config values when using AWS Custom Resource LambdaWithConfig.
@@ -35,29 +38,48 @@ public class LambdaWithConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LambdaWithConfig.class);
 
-    private JsonNode node;
+    private static LambdaWithConfig lambdaWithConfig = new LambdaWithConfig("config.json");
 
-    private static LambdaWithConfig lambdaWithConfig = new LambdaWithConfig();
-
-    private LambdaWithConfig()  {
-
+    public static String readConfig(String key) {
+        return readConfig(key, null);
     }
 
     public static String readConfig(String key, String defaultValue) {
+        return lambdaWithConfig.getConfig(key, defaultValue);
+    }
 
-        String value = lambdaWithConfig.node().has(key) ?
-                lambdaWithConfig.node.get(key).asText():
-                defaultValue;
-        LOGGER.info("Reading key {}, default {} got value {}", key, defaultValue, value);
-        return value;
+    // instance
+
+    private final String configFile;
+    private final ConcurrentMap<String, String> cache = new ConcurrentHashMap<>();
+    private JsonNode node;
+
+    LambdaWithConfig(String configFile)  {
+        this.configFile = configFile;
+    }
+
+    String getConfig(String key, String defaultValue) {
+        return cache.computeIfAbsent(key, __ -> {
+            String value = node().has(key) ?
+                    node.get(key).asText():
+                    defaultValue;
+            if (value == null) {
+                String msg = configFile + " is missing key: " + key;
+                LOGGER.error(msg);
+                throw new IllegalStateException(msg);
+            } else {
+                LOGGER.info("Reading key {}, default {} got value {}", key, defaultValue, value);
+                return value;
+            }
+        });
     }
 
     private synchronized JsonNode node() {
         if (node == null) {
-            URL resource = Thread.currentThread().getContextClassLoader().getResource("config.json");
+            URL resource = Thread.currentThread().getContextClassLoader().getResource(configFile);
 
             if (resource == null) {
-                throw new IllegalStateException("Failed to find config.json");
+                throw new IllegalStateException("Failed to find file: " + configFile);
             }
 
             try {
@@ -65,11 +87,10 @@ public class LambdaWithConfig {
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }
+
+            LOGGER.info("Loaded configuration file: {}", configFile);
         }
         return node;
     }
 
-    public static String readConfig(String key) {
-        return readConfig(key, null);
-    }
 }
