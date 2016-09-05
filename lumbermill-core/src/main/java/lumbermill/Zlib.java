@@ -27,16 +27,21 @@ class Zlib {
     private static final Logger LOGGER = LoggerFactory.getLogger(Zlib.class);
 
     public  <T extends Event>Func1<T, Observable<T>> compress() {
-        return t -> {
-            LOGGER.trace("Compressing event");
-            return  Codecs.BYTES.from(Streams.zlibCompress(t.raw())).toObservable();
-        };
+        return t -> Codecs.BYTES.from(Streams.zlibCompress(t.raw())).withMetaData(t).toObservable();
     }
 
     public  <T extends Event>Func1<T, Observable<T>> decompress() {
+        return t -> Codecs.BYTES.from(Streams.zlibDecompress(t.raw())).withMetaData(t).toObservable();
+    }
+
+    public  <T extends Event>Func1<T, Observable<T>> tryDecompress(){
         return t -> {
-            LOGGER.trace("Decompressing event");
-            return Codecs.BYTES.from(Streams.zlibDecompress(t.raw())).toObservable();
+            try {
+                return Codecs.BYTES.from(Streams.zlibDecompress(t.raw())).withMetaData(t).toObservable();
+            } catch (RuntimeException e) {
+                LOGGER.trace("Could not decompress event, returning original");
+                return Observable.just(t);
+            }
         };
     }
 }
