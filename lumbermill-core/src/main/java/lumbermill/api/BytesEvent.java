@@ -36,6 +36,7 @@ public class BytesEvent extends MetaDataEvent {
     public String toString() {
         return "BytesEvent{" +
                 "bytes=" + bytes.toString() +
+                ", metadata=" + map.toMap() +
                 '}';
     }
 }

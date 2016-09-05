@@ -345,7 +345,7 @@ public class ElasticSearchOkHttpClientImpl {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
-                requestCtx.error(e);
+                requestCtx.error(IndexFailedException.ofIOException(e));
             }
 
             @Override

@@ -23,7 +23,7 @@ import java.util.List;
 
 public abstract class MetaDataEvent implements Event {
 
-    private final MapWrap map = MapWrap.of(new HashMap() {
+    protected final MapWrap map = MapWrap.of(new HashMap() {
         {
             put("tags", new ArrayList<>());
         }

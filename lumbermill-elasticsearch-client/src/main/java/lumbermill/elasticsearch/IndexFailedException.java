@@ -20,27 +20,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Optional;
 
 
 public class IndexFailedException extends RuntimeException {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexFailedException.class);
 
+    private final Optional<Response> response;
+
     public IndexFailedException(Throwable t) {
         super(t);
+        response = Optional.empty();
     }
 
-    private IndexFailedException(String msg) {
+    private IndexFailedException(Response response, String msg) {
         super(msg);
+        this.response = Optional.of(response);
     }
 
     public static IndexFailedException of(Response response) {
         try {
-            return new IndexFailedException(response.code() + ", message:" + response.message() +
+            return new IndexFailedException(response, response.code() + ", message:" + response.message() +
                     ", body: " + response.body().string());
         } catch (IOException e) {
             LOGGER.warn("Failed to extract body from error message: " + e.getMessage());
-            return new IndexFailedException(response.code() + ", message:" + response.message());
+            return new IndexFailedException(response, response.code() + ", message:" + response.message());
         }
+    }
+
+    public static IndexFailedException ofIOException(IOException e) {
+        return new IndexFailedException(e);
+    }
+
+    public boolean isConnectFailure() {
+        return !response.isPresent();
+    }
+
+    public int statusCode() {
+        return !isConnectFailure() ? response.get().code() : 0;
     }
 }

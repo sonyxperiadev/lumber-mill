@@ -67,9 +67,9 @@ public class ElasticSearchBulkResponse {
             JsonNode dataNode;
 
             if (node.has("create")) {
-                dataNode = node.get("create");//.get("status").asInt();
+                dataNode = node.get("create");
              } else if (node.has("index")) {
-                dataNode = node.get("index");//.get("status").asInt();
+                dataNode = node.get("index");
             } else {
                 throw new IllegalStateException("Could not find field create or index in response");
             }
