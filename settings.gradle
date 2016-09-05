@@ -2,6 +2,7 @@ rootProject.name = 'lumber-mill'
 include 'lumbermill-core',
     'lumbermill-http-server',
     'lumbermill-elasticsearch-client',
+    'lumbermill-influxdb',
     'lumbermill-aws',
     'lumbermill-aws-lambda',
     'lumbermill-simple-samples'

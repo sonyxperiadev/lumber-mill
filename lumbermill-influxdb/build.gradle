@@ -1,0 +1,8 @@
+
+
+dependencies {
+
+    compile project(':lumbermill-core')
+    compile 'org.influxdb:influxdb-java:2.2'
+}
+
