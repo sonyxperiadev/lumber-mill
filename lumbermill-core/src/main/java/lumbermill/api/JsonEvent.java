@@ -141,7 +141,8 @@ public class JsonEvent extends MetaDataEvent {
     {
         try {
             return pretty ? objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonNode)
-                    : objectMapper.writeValueAsString(jsonNode);
+                    : objectMapper.writeValueAsString(jsonNode) + "\"" +
+            "JsonEvent.metadata=" + map.toMap();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
