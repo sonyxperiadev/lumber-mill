@@ -1,6 +1,13 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.16-SNAPSHOT
+
+
+### [Unreleased / master] Version 0.0.17-SNAPSHOT
+
+### 0.0.16
+
+* InfluxDB support
+* Minor fixes
 
 ### 0.0.15
 
