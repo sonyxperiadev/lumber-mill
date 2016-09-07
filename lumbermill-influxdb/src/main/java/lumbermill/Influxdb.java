@@ -1,21 +1,22 @@
-package lumbermill.influxdb;
+package lumbermill;
 
 
 import lumbermill.api.JsonEvent;
-import lumbermill.influxdb.internal.InfluxDBClient;
+import lumbermill.internal.influxdb.InfluxDBClient;
 import rx.Observable;
 import rx.functions.Func1;
 
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * Handle to InfluxDB
+ */
 public class Influxdb {
 
-  private static final Influxdb influxdb = new Influxdb ();
+  public static final Influxdb influxdb = new Influxdb ();
 
   private InfluxDBClient client = new InfluxDBClient ();
-
 
   public Func1<List<JsonEvent>, Observable<List<JsonEvent>>> client(Map map) {
     return client.client (map);

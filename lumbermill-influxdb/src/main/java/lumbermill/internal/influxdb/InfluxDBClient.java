@@ -1,9 +1,7 @@
-package lumbermill.influxdb.internal;
+package lumbermill.internal.influxdb;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Lists;
-import lumbermill.api.Codecs;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.StringTemplate;
@@ -15,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
+import rx.observables.GroupedObservable;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,19 +61,33 @@ public class InfluxDBClient {
 
             Observable.from(events)
                     .groupBy(e -> dbTemplate.format(e).get())
-                    .doOnNext(byDatabase -> influxDB.createDatabase(byDatabase.getKey().replaceAll("[^A-Za-z0-9]", "")))
+                    .doOnNext(byDatabase -> ensureDatabaseExists (influxDB, byDatabase))
                     .doOnNext(byDatabase ->
                         byDatabase
                                 .flatMap(jsonEvent -> buildPoint(config, measurementTemplate, jsonEvent))
                                 .buffer(config.get("flushSize", 100))
-                                .flatMap(points ->
-                                        Observable.just(BatchPoints.database(byDatabase.getKey().replaceAll("[^A-Za-z0-9]", ""))
-                                                .points(points.toArray(new Point[0])).build()))
+                                .flatMap(points -> toBatchPoints (byDatabase, points))
                                 .doOnNext(batchPoints -> influxDB.write(batchPoints))
                                 .subscribe()
                     ).subscribe();
             return Observable.just(events);
         };
+    }
+
+    private Observable<BatchPoints> toBatchPoints (GroupedObservable<String, JsonEvent> byDatabase, List<Point> points) {
+        return Observable.just(BatchPoints.database(ensureDatabaseNameIsValid (byDatabase.getKey ()))
+               .points(points.toArray(new Point[0])).build());
+    }
+
+    private String ensureDatabaseNameIsValid (String dbName) {
+        return dbName.replaceAll("[^A-Za-z0-9]", "");
+    }
+
+    /**
+   * TODO - Add a cache of databases that evicts names after a certain interval but removes an extra HTTP call for each invocation.
+   */
+  private void ensureDatabaseExists (InfluxDB influxDB, GroupedObservable<String, JsonEvent> byDatabase) {
+        influxDB.createDatabase(ensureDatabaseNameIsValid (byDatabase.getKey ()));
     }
 
     private static Observable<Point> buildPoint(MapWrap config, StringTemplate measurementTemplate, JsonEvent jsonEvent) {
@@ -180,7 +193,7 @@ public class InfluxDBClient {
         }
 
         private String key(MapWrap config) {
-            return format("%s:%s:%s", config.asString ("url"), config.asString ("user"));
+            return format("%s:%s", config.asString ("url"), config.asString ("user"));
         }
     }
 }

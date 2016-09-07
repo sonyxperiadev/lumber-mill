@@ -1,4 +1,4 @@
-package lumbermill.influxdb.internal;
+package lumbermill.internal.influxdb;
 
 import com.google.common.collect.Lists;
 import lumbermill.api.Codecs;
@@ -23,18 +23,17 @@ public class InfluxDBClientTest {
 
   private InfluxDBClient createClient (Answer answer) {
 
-    return InfluxDBClient.prepareForTest (new InfluxDBClient.Factory () {
-      @Override
-      public InfluxDB create (MapWrap mapWrap) {
-        InfluxDB mock = mock (InfluxDB.class);
-        doAnswer (answer).when (mock).write (any (BatchPoints.class));
-        return mock;
-      }
+    return InfluxDBClient.prepareForTest (mapWrap -> {
+      InfluxDB mock = mock (InfluxDB.class);
+      doAnswer (answer).when (mock).write (any (BatchPoints.class));
+      return mock;
     });
   }
 
   @Test
   public void test_save_metrics () {
+
+
     createClient (invocation -> {
 
         BatchPoints batchPoints = (BatchPoints) invocation.getArguments ()[0];
