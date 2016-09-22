@@ -421,7 +421,7 @@ public class ElasticSearchOkHttpClientImpl {
      */
     private class RequestContext {
 
-        public final ReplaySubject<ElasticSearchBulkResponseEvent> subject = ReplaySubject.createWithSize(1);;
+        public final ReplaySubject<ElasticSearchBulkResponseEvent> subject = ReplaySubject.createWithSize(1);
 
         /**
          * Keep them here until we are done, then return them
