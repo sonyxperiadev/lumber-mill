@@ -317,16 +317,7 @@ public class Core {
 
     private static <E extends Event> Func1<JsonEvent,Observable<JsonEvent>> rename(
             String fromField, String toField, boolean copy) {
-        return event -> {
-            String value = event.valueAsString(fromField);
-            if(value != null) {
-                event.put(toField, value);
-                if (! copy) {
-                    event.remove(fromField);
-                }
-            }
-            return event.toObservable();
-        };
+        return event -> event.rename (fromField, toField).toObservable ();
     }
 
 
@@ -602,7 +593,7 @@ public class Core {
      * of envelope.
      */
     public static  Func1<JsonEvent, Observable<AnyJsonEvent>> jsonOfField(String field) {
-        return e -> e.child(field).withMetaData(e).toObservable();
+        return e -> e.has (field) ? e.child(field).withMetaData(e).toObservable() : Observable.empty ();
     }
 
 

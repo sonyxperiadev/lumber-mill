@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import okio.ByteString;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -209,6 +210,27 @@ public class JsonEvent extends MetaDataEvent {
             }
         }
         return this;
+    }
+
+    public JsonEvent rename(String from, String to) {
+        if (jsonNode.has (from)) {
+            jsonNode.set (to, jsonNode.get (from));
+            jsonNode.remove (from);
+        }
+        return this;
+    }
+
+    public List<String> getTags() {
+
+        if (!jsonNode.has ("tags")) {
+           return Collections.EMPTY_LIST;
+        }
+        ArrayNode node = (ArrayNode)jsonNode.get ("tags");
+        List<String> tags = new ArrayList<> ();
+        for (JsonNode jNode : node) {
+            tags.add (jNode.asText ());
+        }
+        return tags;
     }
 
     @Override
