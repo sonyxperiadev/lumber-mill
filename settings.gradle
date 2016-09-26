@@ -5,4 +5,5 @@ include 'lumbermill-core',
     'lumbermill-influxdb',
     'lumbermill-aws',
     'lumbermill-aws-lambda',
+    'lumbermill-aws-kcl',
     'lumbermill-simple-samples'
