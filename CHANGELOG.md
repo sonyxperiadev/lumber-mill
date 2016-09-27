@@ -2,7 +2,14 @@
 
 
 
-### [Unreleased / master] Version 0.0.17-SNAPSHOT
+### [Unreleased / master] Version 0.0.18-SNAPSHOT
+
+### 0.0.17
+
+* After months of running KCL internally we now release it with Lumbermill, docs will be updated but
+  checkout lumbermill-simple-samples for a small runnable sample.
+* Bumped RxJava and vertx to latest
+* Bug fixes rename() was converting all types to String
 
 ### 0.0.16
 
