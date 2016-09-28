@@ -15,22 +15,18 @@
 package lumbermill.internal.http;
 
 
+import lumbermill.Http;
+import lumbermill.api.Codecs;
 import lumbermill.api.JsonEvent;
 import lumbermill.http.AbstractHttpHandler;
 import lumbermill.http.HttpHandler;
-import okio.ByteString;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import lumbermill.api.Codecs;
-import lumbermill.Http;
-import lumbermill.api.Event;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static lumbermill.Core.wrap;
+import static org.awaitility.Awaitility.await;
 
 @Ignore("Does not work on Travis for some reason")
 public class HttpCodecHttpServerTest extends AbstractHttpServerTest {

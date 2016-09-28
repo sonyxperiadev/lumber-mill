@@ -15,7 +15,7 @@
 package lumbermill.internal.http;
 
 
-import com.jayway.awaitility.Awaitility;
+import org.awaitility.Awaitility;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import lumbermill.Http;

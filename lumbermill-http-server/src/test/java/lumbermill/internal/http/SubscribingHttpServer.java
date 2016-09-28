@@ -15,17 +15,15 @@
 package lumbermill.internal.http;
 
 import lumbermill.Core;
-import lumbermill.api.Event;
+import lumbermill.Http;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import lumbermill.Http;
-import rx.Observable;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static lumbermill.internal.http.Funcs.runtimeEx;
+import static org.awaitility.Awaitility.await;
 
 @Ignore("Does not work on Travis for some reason")
 public class SubscribingHttpServer extends AbstractHttpServerTest {

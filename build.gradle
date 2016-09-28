@@ -19,7 +19,7 @@ subprojects {
     }
 
     dependencies {
-        testCompile 'com.jayway.awaitility:awaitility:1.7.0'
+        testCompile 'org.awaitility:awaitility:2.0.0'
         testCompile 'junit:junit:4.12'
         testCompile 'org.assertj:assertj-core:3.5.1'
         testCompile 'org.mockito:mockito-core:1.9.5'
