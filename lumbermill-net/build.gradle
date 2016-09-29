@@ -1,0 +1,10 @@
+
+dependencies {
+
+    compile project(':lumbermill-core')
+    compile 'io.vertx:vertx-core:3.3.3'
+    compile 'ch.qos.logback:logback-classic:1.1.6'
+    compile 'ch.qos.logback:logback-core:1.1.6'
+
+}
+

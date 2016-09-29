@@ -1,8 +1,10 @@
 rootProject.name = 'lumber-mill'
 include 'lumbermill-core',
+    'lumbermill-net',
     'lumbermill-http-server',
     'lumbermill-elasticsearch-client',
     'lumbermill-influxdb',
+    'lumbermill-graphite',
     'lumbermill-aws',
     'lumbermill-aws-lambda',
     'lumbermill-aws-kcl',
