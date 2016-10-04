@@ -6,7 +6,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetSocket;
-import lumbermill.net.api.TCPClient;
+import lumbermill.net.api.Socket;
 import okio.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +20,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.lang.String.format;
 
 
-public class VertxTCPClient implements TCPClient {
+public class VertxReconnectableSocket implements Socket {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger (VertxTCPClient.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (VertxReconnectableSocket.class);
 
   private final URI uri;
   private final Vertx vertx = Vertx.vertx ();
@@ -31,28 +31,28 @@ public class VertxTCPClient implements TCPClient {
   private final Semaphore connectLock = new Semaphore (1);
   private final AtomicBoolean closeRequested = new AtomicBoolean (false);
 
-  public VertxTCPClient (URI uri) {
+  public VertxReconnectableSocket (URI uri) {
    this(uri, new NetClientOptions()
      .setConnectTimeout(1000)
      .setReconnectAttempts (5)
      .setReconnectInterval (1000));
   }
 
-  public VertxTCPClient (URI uri, NetClientOptions options) {
+  public VertxReconnectableSocket (URI uri, NetClientOptions options) {
     client = vertx.createNetClient(options);
     this.uri = uri;
   }
 
 
-  public VertxTCPClient write(ByteString... data) {
-      LOGGER.debug ("write():length:{}", data.length);
+  public VertxReconnectableSocket write(ByteString... data) {
+
       NetSocket socket = this.socket.get ();
       for (ByteString s : data) {
         if (!isConnected ()) {
           LOGGER.error ("Not connected to server, unable to send data to {}", uri);
           throw new IllegalStateException (format("Not connected, unable to send data to %s", uri));
         }
-        System.out.println ("full? " + socket.writeQueueFull ());
+
         socket.write (Buffer.buffer (s.toByteArray ()));
       }
     return this;
@@ -71,11 +71,28 @@ public class VertxTCPClient implements TCPClient {
     return socket.get () != null;
   }
 
-  public VertxTCPClient write(List<ByteString> data) {
+  public VertxReconnectableSocket write(List<ByteString> data) {
     return write(data.toArray (new ByteString[0]));
   }
 
-  public VertxTCPClient connect() {
+
+
+  public VertxReconnectableSocket connect() {
+    // Block until connected
+    doConnect ();
+    try {
+      connectLock.acquire ();
+      connectLock.release ();
+    } catch (InterruptedException e) {
+      Thread.currentThread ().interrupt ();
+    }
+    if (isConnected ()) {
+      return this;
+    }
+    throw new IllegalStateException ("Unable to connect to " + uri);
+  }
+
+  private VertxReconnectableSocket doConnect() {
     if (!connectLock.tryAcquire ()) {
       LOGGER.info ("Connect attempt already in progress");
       return this;
@@ -83,13 +100,13 @@ public class VertxTCPClient implements TCPClient {
 
     client.connect(uri.getPort (), uri.getHost (), res -> {
       if (res.succeeded()) {
-        connectLock.release ();
         LOGGER.info("Connected to {}", uri);
         NetSocket socket = res.result();
         socket.closeHandler (reconnectOnClose ());
         socket.handler (responseHandler ());
         socket.exceptionHandler (exceptionHandler());
         this.socket.set (socket);
+        connectLock.release ();
       } else {
         connectLock.release ();
         LOGGER.warn ("Failed to connect: " + res.cause().getMessage());
@@ -99,9 +116,9 @@ public class VertxTCPClient implements TCPClient {
     return this;
   }
 
-  private VertxTCPClient reconnect() {
+  private VertxReconnectableSocket reconnect() {
     socket.set(null);
-    return connect ();
+    return doConnect ();
   }
 
   private Handler<Throwable> exceptionHandler () {

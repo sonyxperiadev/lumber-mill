@@ -4,6 +4,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
 import lumbermill.api.BytesEvent;
 import lumbermill.api.Codecs;
+import lumbermill.net.api.Net;
 import okio.ByteString;
 
 import java.util.function.Consumer;
@@ -13,7 +14,7 @@ import java.util.function.Consumer;
  * Experimental Dummy TCP Server currently used in tests only
  *
  */
-public class VertxTCPServer {
+public class VertxTCPServer implements Net.TCPServer {
 
   private static final Vertx vertx = Vertx.vertx ();
 
@@ -36,7 +37,7 @@ public class VertxTCPServer {
     return dummyConnected;
   }
 
-  public VertxTCPServer listen(Consumer<BytesEvent> consumer) {
+  public Net.TCPServer listen(Consumer<BytesEvent> consumer) {
     server = vertx.createNetServer();
     server.connectHandler(socket -> {
       socket.handler(buffer -> {

@@ -5,5 +5,7 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.6'
     compile 'ch.qos.logback:logback-core:1.1.6'
 
+    testCompile project(':lumbermill-http-server')
+
 }
 

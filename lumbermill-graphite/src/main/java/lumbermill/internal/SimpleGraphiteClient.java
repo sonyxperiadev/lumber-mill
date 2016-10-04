@@ -1,11 +1,18 @@
 package lumbermill.internal;
 
-
-import lumbermill.internal.net.VertxTCPClient;
-import lumbermill.net.api.TCPClient;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.net.ProxyOptions;
+import lumbermill.api.BytesEvent;
+import lumbermill.api.JsonEvent;
+import lumbermill.internal.net.VertxReconnectableSocket;
+import lumbermill.net.api.Net;
+import lumbermill.net.api.Socket;
 import okio.ByteString;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -22,34 +29,74 @@ public class SimpleGraphiteClient {
   /**
    * Keeps a global map with host:port pairs to prevent from creating multipe clients
    */
-  private static final Map<URI, TCPClient> clients = new HashMap<> ();
+  private static final Map<URI, Socket> clients = new HashMap<> ();
 
-  private final TCPClient tcpClient;
+  private Socket socket;
 
-  public SimpleGraphiteClient (String host, int port) {
-    URI uri = URI.create (format ("tcp://%s:%s", host, port));
+  private HttpClient httpClient;
+
+  public SimpleGraphiteClient () {
+
+  }
+
+
+  public static SimpleGraphiteClient create() {
+    return new SimpleGraphiteClient ();
+  }
+
+
+  public SimpleGraphiteClient carbonServer(Socket socket) {
+    this.socket = socket;
+    return this;
+  }
+
+  public SimpleGraphiteClient carbonServer(String host, int tcpPort) {
+    URI uri = URI.create (format ("tcp://%s:%s", host, tcpPort));
     if (clients.containsKey (uri)) {
       LOGGER.info ("Found existing tcp client for {}", uri);
-      this.tcpClient = clients.get (uri);
+      this.socket = clients.get (uri);
     } else {
       LOGGER.info ("Creating new tcp client for {}", uri);
-      this.tcpClient = new VertxTCPClient (uri).connect ();
-      clients.put (uri, this.tcpClient);
+      this.socket = new VertxReconnectableSocket (uri).connect ();
+      clients.put (uri, this.socket);
     }
+    return this;
   }
 
-  public SimpleGraphiteClient (TCPClient tcpClient) {
-    this.tcpClient = tcpClient;
+  public SimpleGraphiteClient withEventServer (String host, int port) {
+      httpClient = Net.httpClient (new HttpClientOptions ().setDefaultHost (host).setDefaultPort (port));
+     return this;
   }
+
+
+
 
   public void save (Metric metric) {
 
     if (LOGGER.isTraceEnabled ()) {
       LOGGER.trace (metric.format ().utf8 ());
     }
-    tcpClient.write (metric.format ());
+    socket.write (metric.format ());
   }
 
+  public Observable<BytesEvent> write(JsonEvent event) {
+
+    return Net.rxify (httpClient.post ("/events/")
+      .putHeader ("Content-Type", "application/json"))
+      .okOn(200)
+      .write (event)
+      .map (httpResponse -> httpResponse.data ());
+  }
+
+
+  private static HttpClientOptions withProxyOptions (HttpClientOptions options) {
+    String https_proxy = System.getenv ("https_proxy");
+    if (StringUtils.isNotEmpty (https_proxy)) {
+      URI proxy = URI.create (https_proxy);
+      options.setProxyOptions (new ProxyOptions ().setHost (proxy.getHost ()).setPort (proxy.getPort ()));
+    }
+    return options;
+  }
 
   public static class Metric {
 
@@ -72,7 +119,7 @@ public class SimpleGraphiteClient {
           return this;
       }
 
-      private ByteString format() {
+      public ByteString format() {
         return ByteString.of (String.format("%s %s %d%n", metric, value, timeInSeconds).getBytes ());
       }
 

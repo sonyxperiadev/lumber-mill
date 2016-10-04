@@ -4,9 +4,9 @@ package lumbermill.net.api;
 import okio.ByteString;
 
 
-public interface TCPClient {
+public interface Socket {
 
   boolean isConnected ();
   void close ();
-  TCPClient write (ByteString... data);
+  Socket write (ByteString... data);
 }
