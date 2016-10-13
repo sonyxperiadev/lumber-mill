@@ -100,6 +100,8 @@ public class S3ClientImpl<T extends Event> {
         String sBucket = format(event, bucketTemplate);
         String sKey    = format(event, keyTemplate);
         File file = this.get(sBucket, sKey);
+        file.deleteOnExit();
+        
         event.put(outputFieldName, file.getPath());
         LOGGER.debug("File download from s3 was stored in {}", file);
 
@@ -111,9 +113,13 @@ public class S3ClientImpl<T extends Event> {
                         LOGGER.debug("Deleted s3 file s3://{}/{} successfully", sBucket, sKey);
                     }
                 })
+                .doOnUnsubscribe(() -> {
+                    boolean deleted = file.delete();
+                    LOGGER.debug("OnSubscribe:Deleted local file {} successfully ? {}", file, deleted);
+                })
                 .doOnTerminate(() -> {
                     boolean deleted = file.delete();
-                    LOGGER.debug("Deleted local file {} successfully ? {}", file, deleted);
+                    LOGGER.debug("OnTerminate:Deleted local file {} successfully ? {}", file, deleted);
                 });
     }
 
