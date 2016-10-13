@@ -43,8 +43,6 @@ public class KinesisClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KinesisClientFactory.class);
 
-    private static final int DEFAULT_ATTEMPTS = 20;
-
     private Map<String, SimpleRetryableKinesisClient> clients = new HashMap<>();
 
     /**
@@ -54,7 +52,8 @@ public class KinesisClientFactory {
         if (clients.containsKey(parameters.asString("stream"))) {
             return clients.get(parameters.asString("stream"));
         }
-        SimpleRetryableKinesisClient simpleRetryableKinesisClient = new SimpleRetryableKinesisClient(getAsyncClient(parameters),
+        SimpleRetryableKinesisClient simpleRetryableKinesisClient =
+                new SimpleRetryableKinesisClient(getAsyncClient(parameters),
                 parameters.asString("stream"),
                 //TODO: Consider forcing user to specify partition key
                 parameters.getIfExists("partition_key"));
@@ -62,8 +61,9 @@ public class KinesisClientFactory {
 
         if (parameters.exists("retry")) {
             MapWrap retryConfig = MapWrap.of(parameters.get("retry")).assertExists("policy");
+
             simpleRetryableKinesisClient.withRetryTimer(Observables.timer(retryConfig),
-                    retryConfig.get("attempts", DEFAULT_ATTEMPTS));
+                    retryConfig.get("attempts", SimpleRetryableKinesisClient.DEFAULT_ATTEMPTS));
         }
 
         return simpleRetryableKinesisClient;

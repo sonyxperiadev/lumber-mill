@@ -49,6 +49,8 @@ public class SimpleRetryableKinesisClient<T extends Event> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleRetryableKinesisClient.class);
 
+    public static final int DEFAULT_ATTEMPTS = 20;
+
     private final AmazonKinesisAsync amazonKinesisClient;
 
     private final String stream;
@@ -56,7 +58,8 @@ public class SimpleRetryableKinesisClient<T extends Event> {
     private final Optional<Supplier<StringTemplate>> partitionKeySupplier;
 
     private Timer.Factory timerFactory = Observables.fixedTimer(500);
-    private int maxAttempts;
+
+    private int maxAttempts = DEFAULT_ATTEMPTS;
 
     SimpleRetryableKinesisClient(AmazonKinesisAsync amazonKinesisClient, String stream, Optional<String> partitionKey) {
         this.amazonKinesisClient = amazonKinesisClient;
