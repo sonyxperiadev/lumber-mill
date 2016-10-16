@@ -29,7 +29,7 @@ public class LinearTimer implements Timer, Timer.Factory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LinearTimer.class);
 
-    private AtomicInteger attempt = new AtomicInteger(1);
+    private AtomicInteger attempt = new AtomicInteger(0);
 
     private final int delayInMs;
 
@@ -39,7 +39,7 @@ public class LinearTimer implements Timer, Timer.Factory {
 
     @Override
     public Observable<Long> next() {
-        int delay = delayInMs * attempt.get();
+        int delay = delayInMs * attempt.incrementAndGet();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Delaying operation in {} ms (seedDelay={} attempt={})",
                     delay, delayInMs, attempt.get());
