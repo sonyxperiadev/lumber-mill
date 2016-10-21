@@ -122,7 +122,23 @@ public class SimpleRetryableKinesisClient<T extends Event> {
 
             @Override
             public void onError(Exception exception) {
-                request.error(exception);
+                try {
+                    Observable<Optional<RequestContext>> observable = request.nextAttempt();
+                    observable
+                        .doOnNext(requestContext -> LOGGER.warn("About to retry request from exception: {}", exception.getMessage()))
+                        .doOnNext(context -> {
+                            if (context.isPresent()) {
+                                putRecordsAsync(context.get());
+                            } else {
+                                request.error(new FatalAWSException("Too many kinesis retries, root cause:", exception));
+                            }
+                        })
+                        .doOnError(throwable ->  request.error(throwable))
+                        .subscribe();
+                } catch (Throwable t) {
+                    LOGGER.error("Unexpected exception in onError()", t);
+                    request.error(t);
+                }
             }
 
             @Override
@@ -209,6 +225,20 @@ public class SimpleRetryableKinesisClient<T extends Event> {
             return attempt.get() > SimpleRetryableKinesisClient.this.maxAttempts ? false : true;
         }
 
+
+        /**
+         * Next attempt based on the same request as previous request, use when exception occured
+         *
+         * @return RequestContext IF there are more attempts, Optional.empty() otherwise
+         */
+        public Observable<Optional<RequestContext>> nextAttempt() {
+            this.attempt.incrementAndGet();
+            if (!hasNextAttempt()) {
+                return Observable.just(Optional.empty());
+            }
+
+            return Observables.just(Optional.of(this)).withDelay(timer);
+        }
 
         /**
          * Based on non successful records, returns a RequestContext with a correct PutRecordsRequest
