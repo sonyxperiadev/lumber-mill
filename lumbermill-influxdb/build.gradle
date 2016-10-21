@@ -3,6 +3,6 @@
 dependencies {
 
     compile project(':lumbermill-core')
-    compile 'org.influxdb:influxdb-java:2.2'
+    compile 'org.influxdb:influxdb-java:2.3'
 }
 

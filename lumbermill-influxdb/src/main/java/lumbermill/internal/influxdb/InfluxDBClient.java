@@ -75,6 +75,9 @@ public class InfluxDBClient {
     }
 
     private Observable<BatchPoints> toBatchPoints (GroupedObservable<String, JsonEvent> byDatabase, List<Point> points) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Storing batch of {} in db {}", points.size(), byDatabase.getKey());
+        }
         return Observable.just(BatchPoints.database(ensureDatabaseNameIsValid (byDatabase.getKey ()))
                .points(points.toArray(new Point[0])).build());
     }
@@ -87,7 +90,10 @@ public class InfluxDBClient {
    * TODO - Add a cache of databases that evicts names after a certain interval but removes an extra HTTP call for each invocation.
    */
   private void ensureDatabaseExists (InfluxDB influxDB, GroupedObservable<String, JsonEvent> byDatabase) {
-        influxDB.createDatabase(ensureDatabaseNameIsValid (byDatabase.getKey ()));
+      if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Ensuring db exists: {}", byDatabase.getKey());
+      }
+      influxDB.createDatabase(ensureDatabaseNameIsValid (byDatabase.getKey ()));
     }
 
     private static Observable<Point> buildPoint(MapWrap config, StringTemplate measurementTemplate, JsonEvent jsonEvent) {
@@ -168,7 +174,12 @@ public class InfluxDBClient {
             LOGGER.debug("Could not create a point since no fields where added");
             return Observable.empty();
         }
-        return Observable.just(measurement.build());
+
+        Point point = measurement.build();
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Point to be stored {}", point.toString());
+        }
+        return Observable.just(point);
     }
 
     public  interface Factory {
