@@ -4,7 +4,8 @@
 
 ### [Unreleased / master] Version 0.0.20-SNAPSHOT
 
-
+ * Support for writing to graphite (carbon) using their line protocol
+   Checkout README.md under graphite module.
 
 ### 0.0.19
 
