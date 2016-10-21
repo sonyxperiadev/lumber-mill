@@ -48,12 +48,12 @@ Maven
     <dependency>
           <groupId>com.sonymobile</groupId>
           <artifactId>lumbermill-aws-lambda</artifactId>
-          <version>0.0.18</version>
+          <version>0.0.19</version>
     </dependency>
 
 Gradle
 
-    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.18'
+    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.19'
     
 ### Docker
 

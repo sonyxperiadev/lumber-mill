@@ -4,6 +4,12 @@
 
 ### [Unreleased / master] Version 0.0.19-SNAPSHOT
 
+### 0.0.19
+
+ * Fixed bug in LinearTimer
+ * Support for latest (1.0.x) influxdb
+ * Retry on exception in kinesis publisher
+
 ### 0.0.18
 
 * Fixed bug in kinesis client where retries default was 0 unless specified, is now 20.
