@@ -5,7 +5,7 @@ dependencies {
         project (':lumbermill-core'))
     compile (
         'com.amazonaws:aws-lambda-java-core:1.1.0',
-        'com.amazonaws:aws-lambda-java-events:1.1.0')
+        'com.amazonaws:aws-lambda-java-events:1.3.0')
     compile (
         'ch.qos.logback:logback-core:1.1.7',
         'ch.qos.logback:logback-classic:1.1.7')

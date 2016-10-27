@@ -29,6 +29,9 @@ import rx.Observable;
 @SuppressWarnings("unused")
 public abstract class KinesisLambda implements RequestHandler<KinesisEvent, String> {
 
+    public static final String METADATA_KINESIS_EVENT_RECORD = "kinesisEventRecord";
+    public static final String METADATA_MILLIS_BEHIND_LATEST = "millisBehindLatest";
+
     private EventProcessor eventProcessor;
 
     public KinesisLambda(EventProcessor eventProcessor) {
@@ -40,18 +43,21 @@ public abstract class KinesisLambda implements RequestHandler<KinesisEvent, Stri
         if (eventProcessor instanceof LambdaContextAwareEventProcessor) {
             ((LambdaContextAwareEventProcessor)eventProcessor).initialize(context);
         }
+
         Observable.from(event.getRecords())
                 .map(this::toBytes)
                 .compose(eventProcessor)
                 .count()
-                .doOnNext(cnt -> System.out.println("Total count: " + cnt))
                 .toBlocking()
                 .subscribe();
         return "Done";
     }
 
     protected BytesEvent toBytes(KinesisEvent.KinesisEventRecord record) {
-        return Codecs.BYTES.from(record.getKinesis().getData().array());
+        BytesEvent bytesEvent = Codecs.BYTES.from(record.getKinesis().getData().array());
+        bytesEvent.put(METADATA_KINESIS_EVENT_RECORD, record);
+        bytesEvent.put(METADATA_MILLIS_BEHIND_LATEST, System.currentTimeMillis() - record.getKinesis().getApproximateArrivalTimestamp().getTime());
+        return bytesEvent;
     }
 
 }
