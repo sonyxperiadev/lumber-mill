@@ -6,12 +6,15 @@
 Welcome to Lumber-Mill's documentation!
 =======================================
 
+API for Reactive Log Processing with focus on AWS!
+
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-
+   one_minute_intro
 
 Indices and tables
 ==================
