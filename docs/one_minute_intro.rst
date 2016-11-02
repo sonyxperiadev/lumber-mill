@@ -42,7 +42,7 @@ Lumber-Mill is not designed for the non-programmer, even if he or she is likely 
 for programmers/devops/SRE etc with a professional programming background but with an emergent interest for devops, monitoring and of course
 log processing!
 
-How? Samples please!
+Samples please
 ____________________
 
 **Cloudwatch to Elasticsearch**
@@ -145,7 +145,7 @@ also gzip and put the file back on S3 before processing the contents.
     }
 
 
-Status?
+Status
 _______
 
 We use Lumber-Mill extensively to collect and process logs from different AWS accounts to our central system.
