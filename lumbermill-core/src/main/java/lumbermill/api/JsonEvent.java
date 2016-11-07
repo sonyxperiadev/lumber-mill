@@ -22,6 +22,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okio.ByteString;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -83,6 +87,11 @@ public class JsonEvent extends MetaDataEvent {
         return this;
     }
 
+    public JsonEvent put(String fieldName, BigDecimal value) {
+        jsonNode.put(fieldName, value);
+        return this;
+    }
+
     public long asLong(String field) {
         return jsonNode.get(field).asLong();
     }
@@ -98,6 +107,14 @@ public class JsonEvent extends MetaDataEvent {
     public JsonEvent putMetaData(String key, Object value) {
         super.put(key, value);
         return this;
+    }
+
+    public ZonedDateTime timestamp(String field) {
+        return ZonedDateTime.parse(valueAsString(field), DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    }
+
+    public ZonedDateTime timestamp() {
+        return timestamp("@timestamp");
     }
 
     @Override

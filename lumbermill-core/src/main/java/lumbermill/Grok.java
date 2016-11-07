@@ -40,7 +40,7 @@ public class Grok<E extends Event> {
      * )
      * }</pre>
      */
-    public Func1<JsonEvent,Observable<JsonEvent>> parse (Map conf) {
+    public Func1<JsonEvent, Observable<JsonEvent>> parse (Map conf) {
         MapWrap mapWrap = MapWrap.of(conf).assertExists("field", "pattern");
         lumbermill.internal.transformers.Grok grok = GrokFactory.create(mapWrap.asString("field"),
                 mapWrap.asString("pattern"),

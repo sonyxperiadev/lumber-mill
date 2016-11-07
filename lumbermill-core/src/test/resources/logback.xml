@@ -11,5 +11,5 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="lumbermill" level="TRACE"/>
+    <logger name="lumbermill" level="DEBUG"/>
 </configuration>
