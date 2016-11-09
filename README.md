@@ -4,35 +4,49 @@
 *Lumber Mill is under heavy development/refactoring so expect api changes to occur*
 
 ### What is Lumber Mill?
-Lumber Mills main purpose is to act as a Logstash / Beat when you want to collect logs on AWS infrastructure.
-Lumber Mill can easily be deployed as an AWS Lambda and subscribe to events from Cloudwatch Logs, S3 and Kinesis.
+A lot of things, but the focus is on Log Collection & Processing on AWS, fokus on S3, Cloudwatch Logs and Kinesis.
+Support for writing to Kinesis, S3, Elasticsearch (inkl AWS Elasticsearch Service), Influxdb, Graphite. It also 
+has support for mutating functions like grok etc. The processing pipeline is based on RxJava.
 
-You can also use Lumber Mill to create http adapters for ingesting data into AWS infrastructure or simply run Lumber Mill 
-scripts as one time jobs instead of using AWS Cli or similar.
+
+AWS Lambda sample that receives events from Cloudwatch Logs and stores in AWS Elasticsearch Service.
+
+```groovy
+public class DemoEventProcessor extends CloudWatchLogsLambda implements EventProcessor {
+
+    public DemoEventProcessor() {
+        super(this)
+    }
+
+    Observable call(Observable observable) {
+        observable
+
+        // Parse and de-normalize events
+        .compose ( new CloudWatchLogsEventPreProcessor())
+        .flatMap (  
+            grok.parse (
+               field:        'message',
+               pattern:      '%{AWS_LAMBDA_REQUEST_REPORT}'))
+        .flatMap ( addField('type','cloudwatchlogs'))
+        .flatMap ( fingerprint.md5())
+        .buffer (100)
+        .flatMap (
+            AWS.elasticsearch.client (
+                url:          'https://endpoint',
+                index_prefix: 'indexname-',
+                type:         '{type}',
+                region:       'eu-west-1',
+                document_id:  '{fingerprint}'
+            )
+        )
+    }
+}
+```
+
 
 ### Documentation
-* [Wiki](https://github.com/sonyxperiadev/lumber-mill/wiki/)
+* [http://lumber-mill.readthedocs.io/en/latest/](http://lumber-mill.readthedocs.io/en/latest/)
 * Simple samples are in the lumbermill-simple-samples directory
-* AWS+Advanced Samples are in  [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples)
-
-### Code-As-Config
-Lumber Mill is an *API* with fine-grained functions and uses RxJava as pipeline. You write Lumber-Mill scripts in groovy or java (scala, clojure and other jvm languages "probably" works as well but have not been explored).
-
-### Goals
-* Lumber Mill is not trying to replace Logstash or Beats or any other log collecting framework. 
-It tries to fill the gap that we think exists when running on AWS.
-* API and Code instead of configuration to make it easy to extend and adapt. Developers have the full power to 
-use the complete Java8 platform and any framework they may need.
-* Simple and Fun
-
-### Background
-The project started after struggling to make Logstash do **exactly** what we wanted to do on AWS and
-Lumber Mill is the third generation of this project that we decided to open source. We have been running
-earlier versions in production for more than a year.
-
-### Samples
-Samples are found in [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples) repository
-
 
 ### Changes
 [View Changelog](CHANGELOG.md)
