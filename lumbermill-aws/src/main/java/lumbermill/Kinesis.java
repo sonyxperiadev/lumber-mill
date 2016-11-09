@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * AWS Kinesis, currently only producer is supported.
  */
-class Kinesis<E extends Event> {
+public class Kinesis<E extends Event> {
 
     private final KinesisClientFactory factory = new KinesisClientFactory();
 

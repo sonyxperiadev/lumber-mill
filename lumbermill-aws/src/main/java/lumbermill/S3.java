@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 
 
- class S3<E extends Event> {
+ public class S3<E extends Event> {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3.class);
 

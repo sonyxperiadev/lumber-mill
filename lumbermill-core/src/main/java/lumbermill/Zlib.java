@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
-class Zlib {
+public class Zlib {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Zlib.class);
 

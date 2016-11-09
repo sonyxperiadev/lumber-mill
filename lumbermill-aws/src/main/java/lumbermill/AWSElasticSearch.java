@@ -33,7 +33,7 @@ import static lumbermill.internal.aws.AWSV4SignerFactory.createAndAddSignerToCon
  * request signing to support this. If you are not using roled-based access control, you can
  * instead use lumbermill-elasticsearch-client only.
  */
-class AWSElasticSearch {
+public class AWSElasticSearch {
 
 
      public Subscriber<JsonEvent> subscriber(Map map) {
