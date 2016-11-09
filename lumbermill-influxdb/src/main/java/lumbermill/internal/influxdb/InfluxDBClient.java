@@ -1,3 +1,17 @@
+/*
+ * Copyright 2016 Sony Mobile Communications, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 package lumbermill.internal.influxdb;
 
 
@@ -26,8 +40,12 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static lumbermill.internal.Concurrency.ioJob;
 
-
+/**
+ * Based on the configuration it builds Influxdb BatchPoints and stores in Influxdb.
+ * All IO is done async.
+ */
 public class InfluxDBClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InfluxDBClient.class);
@@ -38,64 +56,90 @@ public class InfluxDBClient {
         return new InfluxDBClient (factory);
     }
 
-    public InfluxDBClient () {
-        dbFactory = new DefaultFactory();
+    private final InfluxDBClient.Factory dbFactory;
+
+    public InfluxDBClient (){this(new DefaultFactory());
     }
 
     private InfluxDBClient (Factory factory) {
         this.dbFactory = factory;
     }
 
-    private final InfluxDBClient.Factory dbFactory;
-
-
+    /**
+     * Creates a function that can be invoked with flatMap().
+     * Use buffer(n) to decide how large each batch should be
+     *
+     * @param map - is the config
+     */
     public Func1<List<JsonEvent>, Observable<List<JsonEvent>>> client(Map map) {
 
         final MapWrap config                     = MapWrap.of(map).assertExists("fields", "db", "url", "user", "password");
         final StringTemplate measurementTemplate = config.asStringTemplate("measurement");
         final StringTemplate dbTemplate          = config.asStringTemplate("db");
 
-        final InfluxDB influxDB = dbFactory.create(config);
+        final InfluxDB influxDB = dbFactory.createOrGet(config);
 
-        return events -> {
+        return events ->
 
             Observable.from(events)
                     .groupBy(e -> dbTemplate.format(e).get())
-                    .doOnNext(byDatabase -> ensureDatabaseExists (influxDB, byDatabase))
+                    .flatMap(byDatabase -> ensureDatabaseExists (influxDB, byDatabase))
                     .doOnNext(byDatabase ->
                         byDatabase
                                 .flatMap(jsonEvent -> buildPoint(config, measurementTemplate, jsonEvent))
                                 .buffer(config.get("flushSize", 100))
-                                .flatMap(points -> toBatchPoints (byDatabase, points))
-                                .doOnNext(batchPoints -> influxDB.write(batchPoints))
-                                .subscribe()
-                    ).subscribe();
-            return Observable.just(events);
-        };
+                                .map(points -> toBatchPoints (byDatabase, points))
+                                .flatMap(batchPoints -> save(batchPoints, influxDB))
+                    )
+                    .flatMap(o -> Observable.just(events));
     }
 
-    private Observable<BatchPoints> toBatchPoints (GroupedObservable<String, JsonEvent> byDatabase, List<Point> points) {
+    /**
+     * Saves BatchPoints on IO thread
+     */
+    private Observable<BatchPoints> save(BatchPoints batchPoints, InfluxDB db) {
+        return  ioJob(() -> {
+            db.write(batchPoints);
+            return batchPoints;
+        });
+    }
+
+    /**
+     * Converts a list of Points to BatchPoints
+     */
+    private BatchPoints toBatchPoints (GroupedObservable<String, JsonEvent> byDatabase, List<Point> points) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Storing batch of {} in db {}", points.size(), byDatabase.getKey());
         }
-        return Observable.just(BatchPoints.database(ensureDatabaseNameIsValid (byDatabase.getKey ()))
-               .points(points.toArray(new Point[0])).build());
+        return BatchPoints.database(ensureDatabaseNameIsValid (byDatabase.getKey ()))
+               .points(points.toArray(new Point[0])).build();
     }
 
+    /**
+     * Removes illegal chars from db name
+     */
     private String ensureDatabaseNameIsValid (String dbName) {
         return dbName.replaceAll("[^A-Za-z0-9]", "");
     }
 
     /**
-   * TODO - Add a cache of databases that evicts names after a certain interval but removes an extra HTTP call for each invocation.
+     * Invokes createOrGet database command to make sure that the database exists
+     *
+     * * TODO - Add a cache of databases that evicts names after a certain interval but removes an extra HTTP call for each invocation.
    */
-  private void ensureDatabaseExists (InfluxDB influxDB, GroupedObservable<String, JsonEvent> byDatabase) {
+  private Observable<GroupedObservable<String, JsonEvent>> ensureDatabaseExists (InfluxDB influxDB, GroupedObservable<String, JsonEvent> byDatabase) {
       if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("Ensuring db exists: {}", byDatabase.getKey());
       }
-      influxDB.createDatabase(ensureDatabaseNameIsValid (byDatabase.getKey ()));
+      return ioJob(() -> {
+          influxDB.createDatabase(ensureDatabaseNameIsValid (byDatabase.getKey ()));
+          return byDatabase;
+      });
     }
 
+    /**
+     * Creates  Points based on the event and config
+     */
     private static Observable<Point> buildPoint(MapWrap config, StringTemplate measurementTemplate, JsonEvent jsonEvent) {
 
         final MapWrap fieldsConfig = MapWrap.of(config.get("fields"));
@@ -108,7 +152,7 @@ public class InfluxDBClient {
             LOGGER.debug("Failed to extract measurement using {}, not points will be created", measurementTemplate.original());
             return Observable.empty();
         }
-        Point.Builder measurement =
+        Point.Builder pointBuilder =
                 Point.measurement(measurementOptional.get());
 
 
@@ -132,11 +176,11 @@ public class InfluxDBClient {
             addedAtLeastOneField = true;
 
             if (node.isNumber()) {
-                measurement.addField(formattedFieldNameOptional.get(), node.asDouble());
+                pointBuilder.addField(formattedFieldNameOptional.get(), node.asDouble());
             } else if (node.isBoolean()) {
-                measurement.addField(formattedFieldNameOptional.get(), node.asBoolean());
+                pointBuilder.addField(formattedFieldNameOptional.get(), node.asBoolean());
             } else  {
-                measurement.addField(formattedFieldNameOptional.get(), node.asText());
+                pointBuilder.addField(formattedFieldNameOptional.get(), node.asText());
             }
         }
 
@@ -144,7 +188,7 @@ public class InfluxDBClient {
         while (stringIterator.hasNext()) {
             String next = stringIterator.next();
             if (!excludeTags.contains(next)) {
-                measurement.tag(next, jsonEvent.valueAsString(next));
+                pointBuilder.tag(next, jsonEvent.valueAsString(next));
             }
         }
 
@@ -155,16 +199,16 @@ public class InfluxDBClient {
         if (timeField.isPresent() && jsonEvent.has(config.asString("time"))) {
 
             if (jsonEvent.unsafe().get(timeField.get()).isTextual()) {
-                measurement.time(ZonedDateTime.parse(jsonEvent.valueAsString("@timestamp"),
+                pointBuilder.time(ZonedDateTime.parse(jsonEvent.valueAsString("@timestamp"),
                         DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli(),
                         precision);
             } else {
-                measurement.time(jsonEvent.asLong(timeField.get()), precision);
+                pointBuilder.time(jsonEvent.asLong(timeField.get()), precision);
             }
         } else {
             // If not overriden, check if timestamp exists and use that
             if (jsonEvent.has("@timestamp")) {
-                measurement.time(ZonedDateTime.parse(jsonEvent.valueAsString("@timestamp"),
+                pointBuilder.time(ZonedDateTime.parse(jsonEvent.valueAsString("@timestamp"),
                         DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli(),
                         precision);
             }
@@ -175,7 +219,7 @@ public class InfluxDBClient {
             return Observable.empty();
         }
 
-        Point point = measurement.build();
+        Point point = pointBuilder.build();
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Point to be stored {}", point.toString());
         }
@@ -183,7 +227,7 @@ public class InfluxDBClient {
     }
 
     public  interface Factory {
-        InfluxDB create (MapWrap mapWrap);
+        InfluxDB createOrGet(MapWrap mapWrap);
     }
 
     private static class DefaultFactory implements InfluxDBClient.Factory {
@@ -191,7 +235,7 @@ public class InfluxDBClient {
         private final static Map<String, InfluxDB> databases = new HashMap<> ();
 
         @Override
-        public InfluxDB create(MapWrap config) {
+        public InfluxDB createOrGet(MapWrap config) {
             config.assertExists("url", "user", "password");
             LOGGER.info("Connecting to InfluxDB {}, user: {}",config.asString("url"), config.asString("user") );
             if (databases.containsKey (key (config))) {

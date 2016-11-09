@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Utility class for working with Observables
  */
@@ -83,6 +85,20 @@ public class Observables {
         throw new IllegalStateException("Expected one of [linear, fixed, exponential] but got " + policy);
     }
 
+
+
+    public static <T>Observable<T> observe(CompletableFuture<T> future) {
+        return Observable.create(subscriber -> {
+            future.whenComplete((value, exception) -> {
+                if (exception != null) {
+                    subscriber.onError(exception);
+                } else {
+                    subscriber.onNext(value);
+                    subscriber.onCompleted();
+                }
+            });
+        });
+    }
 
     public static class ObservableBuilder<T> {
 
