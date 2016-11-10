@@ -80,10 +80,10 @@ public class ElasticSearchBulkResponse {
                 String err = dataNode.has("error") ? dataNode.get("error").asText() : "no error message";
                 if (statusCode == 400) {
                     LOGGER.info("Will not retry event due to BAD_REQUEST:" +  err);
+                } else {
+                    LOGGER.debug("Bulk entry had errors, status: {}, error: {}", statusCode, err);
+                    retryableEvents.add(request.original().get(pos));
                 }
-
-                LOGGER.debug("Bulk entry had errors, status: {}, error: {}", statusCode, err);
-                retryableEvents.add(request.original().get(pos));
             } else {
                 // Successful
                 if (dataNode.get("_version").asInt() > 1) {

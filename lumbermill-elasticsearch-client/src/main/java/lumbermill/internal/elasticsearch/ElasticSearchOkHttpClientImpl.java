@@ -358,6 +358,7 @@ public class ElasticSearchOkHttpClientImpl {
 
     public static FatalIndexException createFatalIndexException(RequestSigner.SignableRequest request, Response response) {
         try {
+            LOGGER.error("Fatal exception from body: " + new String(request.payload().get()));
             return new FatalIndexException(response.code() + ", message:" + response.message() +
                     ", body: " + response.body().string());
         } catch (IOException e) {
@@ -462,7 +463,11 @@ public class ElasticSearchOkHttpClientImpl {
 
         public Observable<RequestContext> nextAttempt(ElasticSearchBulkResponse result) {
             updateResponseEvent(result);
-            this.signableRequest = failedRecords(result);
+            Optional<RequestSigner.SignableRequest> signableRequest = failedRecords(result);
+            if (!signableRequest.isPresent()) {
+                return Observable.empty();
+            }
+            this.signableRequest = signableRequest.get();
             this.attempt.incrementAndGet();
             if (!hasNextAttempt()) {
                 FatalIndexException ex = FatalIndexException.of("Too many retries");
@@ -481,10 +486,14 @@ public class ElasticSearchOkHttpClientImpl {
             }
         }
 
-        private RequestSigner.SignableRequest failedRecords(ElasticSearchBulkResponse result) {
+        private Optional<RequestSigner.SignableRequest> failedRecords(ElasticSearchBulkResponse result) {
             List<JsonEvent> retryableItems = result.getRetryableItems(this.signableRequest);
 
-            return new ElasticSearchRequest(retryableItems, url);
+            if (retryableItems.size() == 0) {
+                LOGGER.debug("No retryable items found, no retry required");
+                return Optional.empty();
+            }
+            return Optional.of(new ElasticSearchRequest(retryableItems, url));
         }
 
         public void done(ElasticSearchBulkResponse bulkResponse) {
