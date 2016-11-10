@@ -4,12 +4,12 @@
 *Lumber Mill is under heavy development/refactoring so expect api changes to occur*
 
 ### What is Lumber Mill?
-A lot of things, but the focus is on Log Collection & Processing on AWS, fokus on S3, Cloudwatch Logs and Kinesis.
-Support for writing to Kinesis, S3, Elasticsearch (inkl AWS Elasticsearch Service), Influxdb, Graphite. It also 
-has support for mutating functions like grok etc. The processing pipeline is based on RxJava.
+*Log Collection & Processing on AWS, with focus on fetching logs from S3, Cloudwatch Logs and Kinesis.
+It currently supports for writing to Kinesis, S3, Elasticsearch (incl AWS Elasticsearch Service), Influxdb & Graphite. It also 
+has support for mutating functions like grok, compression etc. The processing pipeline is based on RxJava.*
 
 
-AWS Lambda sample that receives events from Cloudwatch Logs and stores in AWS Elasticsearch Service.
+Sample AWS Lambda sample that receives events from Cloudwatch Logs and stores in AWS Elasticsearch Service.
 
 ```groovy
 public class DemoEventProcessor extends CloudWatchLogsLambda implements EventProcessor {
@@ -46,7 +46,7 @@ public class DemoEventProcessor extends CloudWatchLogsLambda implements EventPro
 
 ### Documentation
 * [http://lumber-mill.readthedocs.io/en/latest/](http://lumber-mill.readthedocs.io/en/latest/)
-* Simple samples are in the lumbermill-simple-samples directory
+* Simple samples are in the lumbermill-simple-samples module
 
 ### Changes
 [View Changelog](CHANGELOG.md)
@@ -76,6 +76,49 @@ Try out some samples, [Docker on the wiki](https://github.com/sonyxperiadev/lumb
 This will run and list available samples you can run
 
     docker run lifelog/lumber-mill 
+    
+#### Sample: Index a local file with docker
+
+You can try to index a file locally (you must have elasticsearch running) with docker. The sample below will index README.md
+in the directory where you are currently executing. **Note**, you do not need to check out lumbermill to try this but the file
+must exist.
+
+    export ES_URL=http://_your_es_host_:9200
+     
+    docker run --rm \
+    -e buffer=10 \
+    -v $(pwd):/home \
+    -e file=/home/README.md \
+    -e es_url=$ES_URL \
+    lifelog/lumber-mill elasticsearch-fs.groovy
+    
+If you need basic auth add
+    
+    -e user=username -e passwd=somepasswd
+
+
+The code for indexing a single file looks like this, complete code is available under lumbermill-simple-samples
+
+```groovy
+file.readFileAsLines (
+        file:  env('file').string(),
+        codec : Codecs.TEXT_TO_JSON)
+
+.buffer(env('buffer','10').number())
+
+.flatMap (
+    elasticsearch.client(
+            basic_auth:   env('user','').string() + ':' + env('passwd','').string(),
+            url:          env('es_url').string(),
+            index_prefix: 'lumbermill-',
+            type:         'fs',
+            dispatcher: [
+                    max_concurrent_requests: env('max_req','5').number()
+            ]
+        ))
+.doOnError({t -> t.printStackTrace()})
+.subscribe()
+```
     
 ### \*.internal.\*
 

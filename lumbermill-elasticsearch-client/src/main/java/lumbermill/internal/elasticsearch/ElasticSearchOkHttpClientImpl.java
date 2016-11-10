@@ -16,14 +16,7 @@ package lumbermill.internal.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.Dispatcher;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
+import com.squareup.okhttp.*;
 import lumbermill.api.JsonEvent;
 import lumbermill.api.Observables;
 import lumbermill.api.Timer;
@@ -84,6 +77,8 @@ public class ElasticSearchOkHttpClientImpl {
             = MediaType.parse("application/text; charset=utf-8");
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
+
     /**
      * Http client is shared
      */
@@ -108,6 +103,8 @@ public class ElasticSearchOkHttpClientImpl {
     private final URL url;
     private final StringTemplate index;
     private final StringTemplate type;
+    private Optional<String> basicAuthHeader = Optional.empty();
+
     private Optional<StringTemplate> documentId = Optional.empty();
 
     private Optional<RequestSigner> signer = Optional.empty();
@@ -161,6 +158,11 @@ public class ElasticSearchOkHttpClientImpl {
 
     public ElasticSearchOkHttpClientImpl withDispatcher(Dispatcher dispatcher) {
         this.client.setDispatcher(dispatcher);
+        return this;
+    }
+
+    public ElasticSearchOkHttpClientImpl withBasicAuth(String user, String passwd) {
+        this.basicAuthHeader = Optional.of(Credentials.basic(user, passwd));
         return this;
     }
 
@@ -227,9 +229,7 @@ public class ElasticSearchOkHttpClientImpl {
                    request.nextAttempt(bulkResponse)
                            .doOnNext(requestContext -> post(requestContext))
                            .doOnError(throwable -> request.error(throwable))
-                           //.toBlocking()
                            .subscribe();
-                    //post(request.nextAttempt(bulkResponse));
                 } else {
                     request.done(bulkResponse);
                 }
@@ -397,6 +397,10 @@ public class ElasticSearchOkHttpClientImpl {
 
         @Override
         public Map<String, String> headers() {
+            // It is not possible to create a client with both signed and basic-auth so we do not have to worry here.
+             if (basicAuthHeader.isPresent()) {
+                 headers.put(AUTHORIZATION_HEADER_NAME, basicAuthHeader.get());
+            }
             return headers;
         }
 

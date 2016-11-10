@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.util.Arrays.asList;
+
 
 public class ElasticsearchClientFactory {
 
@@ -72,6 +74,21 @@ public class ElasticsearchClientFactory {
 
         if (config.exists("signer")) {
             es.withSigner(config.get("signer"));
+        }
+
+        if (config.exists("basic_auth")) {
+            if (config.exists("signer")) {
+                LOGGER.warn("A client cannot have both signed (AWS) and basic auth. Disabling basic auth");
+            } else {
+                String auth = config.asString("basic_auth");
+                if (!auth.contains(":")) {
+                    throw new IllegalArgumentException("Invalid basic_auth value, expected 'user:passwd' but was " + auth);
+                }
+                if (auth.length() > 1) {
+                    String[] split = auth.split(":");
+                    es.withBasicAuth(split[0], split[1]);
+                }
+            }
         }
 
         if (config.exists("timestamp_field")) {
