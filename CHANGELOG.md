@@ -1,9 +1,10 @@
 # Lumber Mill Releases
 
+### 0.0.20
 
-
-### [Unreleased / master] Version 0.0.20-SNAPSHOT
-
+ * Basic auth for Elasticsearch
+ * Influxdb is now async and non-blocking
+ * Access to raw Kinesis event in AWS Lambda
  * Support for writing to graphite (carbon) using their line protocol
    Checkout README.md under graphite module.
 
