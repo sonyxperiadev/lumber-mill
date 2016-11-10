@@ -1,5 +1,7 @@
 # Lumber Mill Releases
 
+### [Unreleased / master] Version 0.0.21-SNAPSHOT
+
 ### 0.0.20
 
  * Basic auth for Elasticsearch
