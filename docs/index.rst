@@ -3,10 +3,41 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Lumber-Mill's documentation!
+API for Reactive Log Processing with focus on AWS!
 =======================================
 
-API for Reactive Log Processing with focus on AWS!
+Lumber-Mill is designed for programmers/devops/SRE etc with a professional programming background but with an emergent
+interest for devops, monitoring and log processing and who want total control of the event pipeline.
+
+.. code-block:: groovy
+
+    Observable call(Observable eventStream) {
+
+        // Parse and de-normalize events
+        eventStream.compose ( new CloudWatchLogsEventPreProcessor())
+
+        .flatMap (
+            grok.parse (
+               field:        'message',
+               pattern:      '%{AWS_LAMBDA_REQUEST_REPORT}'))
+
+        .flatMap ( addField('type','cloudwatchlogs'))
+
+        .flatMap ( fingerprint.md5())
+
+        .buffer (100)
+
+        .flatMap (
+            AWS.elasticsearch.client (
+                url:          '{es_url}',
+                index_prefix: 'lumbermill-',
+                type:         '{type}',
+                region:       'eu-west-1',
+                document_id:  '{fingerprint}'
+            )
+        )
+    }
+
 
 
 Contents:
