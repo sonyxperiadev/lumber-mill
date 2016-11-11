@@ -1,6 +1,11 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.21-SNAPSHOT
+### 0.0.20
+
+ * Elasticsearch: Messages that causes 400 BAD_REQUEST are now correctly dropped
+   and not retried.
+   
+ * Bumped kcl to 1.7.1 and use the same version for all aws-sdk
 
 ### 0.0.20
 
