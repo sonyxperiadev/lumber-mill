@@ -33,17 +33,19 @@ public class Graphite {
   @Deprecated
   public static Func1<JsonEvent, Observable<JsonEvent>> graphite(Map m) {
     MapWrap config = MapWrap.of (m).assertExistsAny ("metrics");
-    MapWrap metrics = MapWrap.of(config.get ("metrics"));
+    MapWrap metrics = MapWrap.of(config.getObject ("metrics"));
 
-    final boolean dry = config.get ("dry", false);
-    final String prefix = config.get ("prefix", "");
+    final boolean dry = config.asBoolean ("dry", false);
+    final String prefix = config.asString ("prefix", "");
 
-    String timestampField = config.get("timestamp_field", "@timestamp");
-    String timestampPrecision = config.get("timestamp_precision", "ISO_8601");
+    String timestampField = config.asString("timestamp_field", "@timestamp");
+    String timestampPrecision = config.asString("timestamp_precision", "ISO_8601");
 
 
     SimpleGraphiteClient simpleGraphiteClient = !dry ?
-      SimpleGraphiteClient.create().carbonServer (config.get ("host", "localhost"), config.get ("port", 2003)) :
+      SimpleGraphiteClient.create().carbonServer (
+              config.asString ("host", "localhost"),
+              config.asInt ("port", 2003)) :
       SimpleGraphiteClient.create().carbonServer (new Socket () {
         @Override
         public boolean isConnected () {
@@ -67,7 +69,8 @@ public class Graphite {
     List<Tuple2<StringTemplate, StringTemplate>> metricsAndValues = new ArrayList<> ();
 
     for (Object key : metrics.toMap ().keySet ()) {
-        metricsAndValues.add (new Tuple2<> (StringTemplate.compile ((String)key),StringTemplate.compile (metrics.get ((String)key))));
+        metricsAndValues.add (new Tuple2<> (StringTemplate.compile ((String)key),
+                StringTemplate.compile (metrics.asString ((String)key))));
     }
 
     return jsonEvent -> {

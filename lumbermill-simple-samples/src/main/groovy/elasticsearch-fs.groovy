@@ -6,19 +6,19 @@ import static lumbermill.api.Sys.env
 
 
 file.readFileAsLines (
-        file:  env('file').string(),
+        file:  '{file}',
         codec : Codecs.TEXT_TO_JSON)
 
 .buffer(env('buffer','10').number())
 
 .flatMap (
     elasticsearch.client(
-            basic_auth:   env('user','').string() + ':' + env('passwd','').string(),
-            url:          env('es_url').string(),
-            index_prefix: 'lumbermill-',
-            type:         'fs',
+            basic_auth:   '{user   || }:{passwd || }',
+            url:          '{es_url || http://localhost:9200}',
+            index_prefix: '{index  || lumbermill}-',
+            type:         '{fs     || fs}',
             dispatcher: [
-                    max_concurrent_requests: env('max_req','5').number()
+                    max_concurrent_requests: '{max_req || 5}'
             ]
         ))
 .doOnError({t -> t.printStackTrace()})

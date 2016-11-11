@@ -52,7 +52,7 @@ public class File {
 
         MapWrap config = MapWrap.of(map).assertExists("file");
         StringTemplate fileTemplate = config.asStringTemplate("file");
-        Codec<E> codec = config.get("codec", (Codec<E>)Codecs.TEXT_TO_JSON);
+        Codec<E> codec = config.getObject("codec", (Codec<E>)Codecs.TEXT_TO_JSON);
 
         return event -> {
             String file = fileTemplate.format(event).get();
@@ -77,7 +77,7 @@ public class File {
     public <E extends Event> Observable<E> readFile(Map map) {
         MapWrap config = MapWrap.of(map).assertExists("file");
         String file = config.asString("file");
-        Codec<E> codec = config.get("codec", (Codec<E>)Codecs.BYTES);
+        Codec<E> codec = config.getObject("codec", (Codec<E>)Codecs.BYTES);
         return Observable.just(codec.from(Streams.read(new java.io.File(file))));
     }
 

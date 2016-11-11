@@ -73,14 +73,14 @@ public class Observables {
      */
     public static Timer.Factory timer(MapWrap retry) {
         MapWrap mapWrap = retry.assertExists("policy");
-        String policy = mapWrap.get("policy");
+        String policy = mapWrap.asString("policy");
 
         if (policy.equals("linear")) {
-            return linearTimer(mapWrap.get("delayMs", DEFAULT_DELAY_MS));
+            return linearTimer(mapWrap.asInt("delayMs", DEFAULT_DELAY_MS));
         } else if (policy.equals("fixed")) {
-            return fixedTimer(mapWrap.get("delayMs", DEFAULT_DELAY_MS));
+            return fixedTimer(mapWrap.asInt("delayMs", DEFAULT_DELAY_MS));
         } else if (policy.equals("exponential")) {
-            return exponentialTimer(mapWrap.get("delayMs", DEFAULT_EXPONENTIAL_SEED));
+            return exponentialTimer(mapWrap.asInt("delayMs", DEFAULT_EXPONENTIAL_SEED));
         }
         throw new IllegalStateException("Expected one of [linear, fixed, exponential] but got " + policy);
     }

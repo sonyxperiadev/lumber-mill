@@ -63,8 +63,8 @@ import java.util.Optional;
         MapWrap conf = MapWrap.of(config).assertExists("bucket","key");
         StringTemplate bucket   = conf.asStringTemplate("bucket");
         StringTemplate key      = conf.asStringTemplate("key");
-        boolean removeFromS3    = conf.get("remove", false);
-        String outputField      = conf.get("output_field", "s3_download_path");
+        boolean removeFromS3    = conf.asBoolean("remove", false);
+        String outputField      = conf.asString("output_field", "s3_download_path");
 
         S3ClientImpl client = clientFactory.create(conf);
 
@@ -81,7 +81,7 @@ import java.util.Optional;
                 .assertExists("bucket","key");
         StringTemplate bucket = conf.asStringTemplate("bucket");
         StringTemplate key = conf.asStringTemplate("key");
-        Codec<E> codec = conf.get("codec", defaultEntityCodec);
+        Codec<E> codec = conf.getObject("codec", defaultEntityCodec);
 
         S3ClientImpl client = clientFactory.create(conf);
 
@@ -124,7 +124,7 @@ import java.util.Optional;
         StringTemplate keyTemplate = conf.asStringTemplate("key");
 
         Optional<StringTemplate> fileTemplate = conf.exists("file") ?
-                Optional.of(StringTemplate.compile(conf.get("file"))) :
+                Optional.of(StringTemplate.compile(conf.asString("file"))) :
                 Optional.empty();
 
         S3ClientImpl client = clientFactory.create(conf);

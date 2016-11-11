@@ -50,8 +50,23 @@ public final class MapWrap {
         return config;
     }
 
+
+    public String asString(String field, String defaultV) {
+        return exists(field) ? asString(field) : defaultV;
+    }
+
     public String asString(String field) {
-        return String.valueOf(config.get(field));
+        String original = String.valueOf(config.get(field));
+
+        Optional<String> optional = StringTemplate.compile(original).format();
+        if (optional.isPresent()) {
+            return optional.get();
+        }
+        return original;
+    }
+
+    public int asInt(String field, int defaultV) {
+        return exists(field) ? asInt(field) : defaultV;
     }
 
     public int asInt(String field) {
@@ -71,7 +86,7 @@ public final class MapWrap {
         if (value instanceof Number) {
             return (Number)value;
         }
-        return Double.parseDouble(field);
+        return Double.parseDouble(asString(field));
     }
 
     public MapWrap putAll(MapWrap mapWrap) {
@@ -84,28 +99,35 @@ public final class MapWrap {
         return this;
     }
 
+    public boolean asBoolean(String field, boolean defaultV) {
+        return exists(field) ? asBoolean(field) : defaultV;
+    }
+
     public boolean asBoolean(String field) {
         Object value = getRaw(field);
         if (value instanceof Boolean) {
             return (boolean) value;
         }
-        return Boolean.valueOf(String.valueOf(value));
+        return Boolean.valueOf(asString(field));
     }
 
-    public <T> T get(String field) {
+    @Deprecated
+    public <T> T getObject(String field) {
         return (T) config.get(field);
     }
 
+    /*
     public <T> Optional<T> getIfExists(String field) {
         if (exists(field)) {
             return Optional.of(get(field));
         }
         return Optional.empty();
-    }
+    }*/
 
     public boolean exists(String field) {
         return config.containsKey(field);
     }
+
 
     private <T> T getRaw(String field) {
         if (!exists(field)) {
@@ -150,9 +172,10 @@ public final class MapWrap {
     }
 
 
-    public <T> T get(String field, T defauLt) {
+    @Deprecated
+    public <T> T getObject(String field, T defauLt) {
         if (exists(field)) {
-            return get(field);
+            return getObject(field);
         }
         LOGGER.debug("No configured value found for key {}, using default value {}",
                 field, String.valueOf(defauLt));

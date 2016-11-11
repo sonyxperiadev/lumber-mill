@@ -56,14 +56,15 @@ public class KinesisClientFactory {
                 new SimpleRetryableKinesisClient(getAsyncClient(parameters),
                 parameters.asString("stream"),
                 //TODO: Consider forcing user to specify partition key
-                parameters.getIfExists("partition_key"));
+                parameters.exists("partition_key")
+                        ? Optional.of(parameters.asString("partition_key")) : Optional.empty());
         clients.put(parameters.asString("stream"), simpleRetryableKinesisClient);
 
         if (parameters.exists("retry")) {
-            MapWrap retryConfig = MapWrap.of(parameters.get("retry")).assertExists("policy");
+            MapWrap retryConfig = MapWrap.of(parameters.getObject("retry")).assertExists("policy");
 
             simpleRetryableKinesisClient.withRetryTimer(Observables.timer(retryConfig),
-                    retryConfig.get("attempts", SimpleRetryableKinesisClient.DEFAULT_ATTEMPTS));
+                    retryConfig.asInt("attempts", SimpleRetryableKinesisClient.DEFAULT_ATTEMPTS));
         }
 
         return simpleRetryableKinesisClient;
@@ -71,15 +72,16 @@ public class KinesisClientFactory {
 
     private AmazonKinesisAsync getAsyncClient(MapWrap configuration) {
 
-        Optional<ClientConfiguration> kinesisConfig = configuration.getIfExists("kinesis_config");
+        Optional<ClientConfiguration> kinesisConfig = configuration.exists("kinesis_config")
+                ? Optional.of(configuration.getObject("kinesis_config")) : Optional.empty();
         if (kinesisConfig.isPresent()) {
             return createClient(kinesisConfig.get(), configuration);
 
         }
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withMaxConnections(configuration.get("max_connections", 10))
-                .withRequestTimeout(configuration.get("request_timeout", 60000));
+                .withMaxConnections(configuration.asInt("max_connections", 10))
+                .withRequestTimeout(configuration.asInt("request_timeout", 60000));
         if (System.getenv("https_proxy") != null) {
             URI proxy = URI.create(System.getenv("https_proxy"));
             LOGGER.info("Using proxy {}", proxy);
@@ -91,7 +93,8 @@ public class KinesisClientFactory {
 
     private AWSCredentialsProvider getAwsCredentialsProvider(MapWrap configuration, ClientConfiguration awsConfig) {
         AWSCredentialsProvider credentials = new DefaultAWSCredentialsProviderChain();
-        Optional<String> roleArn = configuration.getIfExists("role_arn");
+        Optional<String> roleArn = configuration.exists("role_arn")
+                ? Optional.of(configuration.asString("role_arn")) : Optional.empty();
         if (roleArn.isPresent()) {
             credentials = new STSAssumeRoleSessionCredentialsProvider(credentials, roleArn.get(),
                     "lumbermill", awsConfig);
@@ -107,10 +110,10 @@ public class KinesisClientFactory {
                 configuration, config), config/*, Executors.newFixedThreadPool(config.getMaxConnections(),
                 new ThreadFactoryBuilder().setNameFormat("lumbermill-async-kinesis-%d").build())*/);
 
-        Regions region = Regions.fromName(configuration.get("region", "eu-west-1"));
+        Regions region = Regions.fromName(configuration.asString("region", "eu-west-1"));
         kinesisClient.setRegion(Region.getRegion(region));
         if (configuration.exists("endpoint")) {
-            kinesisClient.setEndpoint(configuration.get("endpoint"));
+            kinesisClient.setEndpoint(configuration.asString("endpoint"));
         }
 
 

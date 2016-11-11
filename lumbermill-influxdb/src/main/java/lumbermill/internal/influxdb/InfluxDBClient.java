@@ -87,7 +87,7 @@ public class InfluxDBClient {
                     .doOnNext(byDatabase ->
                         byDatabase
                                 .flatMap(jsonEvent -> buildPoint(config, measurementTemplate, jsonEvent))
-                                .buffer(config.get("flushSize", 100))
+                                .buffer(config.asInt("flushSize", 100))
                                 .map(points -> toBatchPoints (byDatabase, points))
                                 .flatMap(batchPoints -> save(batchPoints, influxDB))
                     )
@@ -142,8 +142,8 @@ public class InfluxDBClient {
      */
     private static Observable<Point> buildPoint(MapWrap config, StringTemplate measurementTemplate, JsonEvent jsonEvent) {
 
-        final MapWrap fieldsConfig = MapWrap.of(config.get("fields"));
-        final List<String> excludeTags = config.get("excludeTags", DEFAULT_EXCLUDED_TAGS);
+        final MapWrap fieldsConfig = MapWrap.of(config.getObject("fields"));
+        final List<String> excludeTags = config.getObject("excludeTags", DEFAULT_EXCLUDED_TAGS);
 
         // One field is required, otherwise the point will not be created
         boolean addedAtLeastOneField = false;
@@ -192,8 +192,8 @@ public class InfluxDBClient {
             }
         }
 
-        Optional<String> timeField = config.getIfExists("time");
-        TimeUnit precision         = config.get("precision", TimeUnit.MILLISECONDS);
+        Optional<String> timeField = config.exists("time") ? Optional.of(config.asString("time")) : Optional.empty();
+        TimeUnit precision         = config.getObject("precision", TimeUnit.MILLISECONDS);
 
         // Override @timestamp with a ISO_8601 String or a numerical value
         if (timeField.isPresent() && jsonEvent.has(config.asString("time"))) {

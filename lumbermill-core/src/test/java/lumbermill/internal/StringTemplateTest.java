@@ -18,17 +18,31 @@ package lumbermill.internal;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.google.common.collect.ImmutableMap;
 import lumbermill.Core;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StringTemplateTest {
+
+    @Before
+    public void prepare() {
+        System.setProperty("field", "value");
+    }
+
+    @After
+    public void after() {
+        System.setProperty("field","");
+    }
 
     @Test
     public void testExtractSingleValue() {
@@ -66,12 +80,71 @@ public class StringTemplateTest {
 
     @Test
     public void testExtractSystemProperty() {
-        System.setProperty("field", "value");
+
         Codecs.TEXT_TO_JSON.from("hello world")
                 .<JsonEvent>toObservable()
                 .flatMap(Core.addField("field", "Hej hopp {field}"))
                 .doOnNext( o -> assertThat(o.valueAsString("field")).isEqualTo("Hej hopp value"))
                 .subscribe();
+    }
+
+    @Test
+    public void testExtractSystemPropertyOnly() {
+
+        StringTemplate template = StringTemplate.compile("{field}");
+        assertThat(template.format().get()).isEqualTo("value");
+    }
+
+    @Test
+    public void testExtractSystemPropertyWithDefaultButValueFound() {
+
+        StringTemplate template = StringTemplate.compile("{field||monkey}");
+        assertThat(template.format().get()).isEqualTo("value");
+
+    }
+
+    @Test
+    public void testExtractSystemPropertyWithDefaultValue() {
+        StringTemplate template = StringTemplate.compile("{field2||monkey}");
+        assertThat(template.format().get()).isEqualTo("monkey");
+
+        template = StringTemplate.compile("That is a {field2||monkey}");
+        assertThat(template.format().get()).isEqualTo("That is a monkey");
+
+        template = StringTemplate.compile("That is a {field2 || monkey}");
+        assertThat(template.format().get()).isEqualTo("That is a monkey");
+    }
+
+    @Test
+    public void testExtractSystemPropertyWithDefaultValueIsEmptyString() {
+        StringTemplate template = StringTemplate.compile("{field2|| }");
+        assertThat(template.format().get()).isEqualTo("");
+
+        template = StringTemplate.compile("This '{field2|| }' should be empty");
+        assertThat(template.format().get()).isEqualTo("This '' should be empty");
+    }
+
+    /**
+     * This test displays that when using conditional field it will be evaluated when setting
+     * up the pipeline and not for each event.
+     */
+    @Test
+    public void testTemplateWithEventWorksAsExpected() {
+
+        Codecs.TEXT_TO_JSON.from("data")
+                .<JsonEvent>toObservable()
+                .flatMap (Core.rename(ImmutableMap.of("from", "message", "to", "{field || monkey}")))
+                .doOnNext(ev -> assertThat(ev.valueAsString("value")).isEqualTo("data"))
+                .subscribe();
+
+        // Event though we supply field2:banana, this is not known when the rename function is created
+        // so the default 'monkey' is used.
+        Codecs.TEXT_TO_JSON.from("data").put("field2", "banana")
+                .<JsonEvent>toObservable()
+                .flatMap (Core.rename(ImmutableMap.of("from", "message", "to", "{field2 || monkey}")))
+                .doOnNext(ev -> assertThat(ev.valueAsString("monkey")).isEqualTo("data"))
+                .subscribe();
+
     }
 
 

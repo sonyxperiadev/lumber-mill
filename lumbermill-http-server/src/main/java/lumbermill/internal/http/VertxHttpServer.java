@@ -62,7 +62,7 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
     private boolean setupCompleted;
 
     public VertxHttpServer(MapWrap config) {
-        port = config.get("port", DEFAULT_PORT);
+        port = config.asInt("port", DEFAULT_PORT);
         observableListenersByTag = new HashMap<>();
 
         // Setup vertx
@@ -123,13 +123,16 @@ public class VertxHttpServer<T extends Event> extends AbstractVerticle implement
     private Http.Server setupRoute(MapWrap config) {
         String path   = config.asString("path");
         String method = config.asString("method");
-        Optional<Supplier<HttpHandler<T,?>>> handler = config.getIfExists("handler");
+        Optional<Supplier<HttpHandler<T,?>>> handler = config.exists("handler")
+                ? Optional.of(config.getObject("handler")) : Optional.empty();
         Optional<Codec<T>> codec = Optional.empty();
 
         if (!handler.isPresent()) {
-            codec = config.getIfExists("codec");
+            codec = config.exists("codec")
+                    ? Optional.of(config.getObject("codec")) : Optional.empty();
         }
-        Optional<List<String>> tags = config.getIfExists("tags");
+        Optional<List<String>> tags = config.exists("tags")
+                ? Optional.of(config.getObject("tags")) : Optional.empty();
 
         LOGGER.debug("Setting up route, path: {}, method: {}", path, method);
 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * StringTemplate is used instead of a reguar string in most configuration
@@ -63,6 +64,7 @@ public class StringTemplate {
     private boolean hasFields() {
         return fields.size() > 0;
     }
+
 
     /**
      * Formats the contents from the field according to the contents of the
@@ -116,6 +118,65 @@ public class StringTemplate {
     }
 
 
+    /**
+     * Format that will only check System.getProperty() and System.getenv()
+     */
+    public Optional<String> format() {
+
+        if (fields.size() == 0) {
+            return Optional.of(pattern);
+        }
+
+        String newExpression = pattern;
+        boolean foundField = false;
+        for( SimpleField field : fields) {
+
+
+            String property = System.getProperty(field.name);
+            if (property != null) {
+                foundField = true;
+                newExpression = newExpression.replace(
+                        String.format("{%s}", field.expression),
+                        String.format("%s", property));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Value for field {} was found as system property", field.name);
+                }
+                continue;
+            }
+
+            String env = System.getenv(field.name);
+
+            if (env != null) {
+                foundField = true;
+                newExpression = newExpression.replace(
+                        String.format("{%s}", field.expression),
+                        String.format("%s", env));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                }
+                continue;
+            }
+
+            if (field.hasDefault()) {
+                foundField = true;
+                newExpression = newExpression.replace(
+                        String.format("{%s}", field.expression),
+                        String.format("%s", field.defaultValue));
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                }
+
+            }
+
+
+
+        }
+        return foundField ?
+                Optional.of(newExpression) :
+                Optional.<String>empty();
+
+    }
+
     private void initializeFields(String expression, List<SimpleField> fields) {
 
         int first = expression.indexOf("{");
@@ -138,14 +199,30 @@ public class StringTemplate {
 
     private static class SimpleField {
 
+        public final String expression;
         public final String name;
+        public final String defaultValue;
 
         static SimpleField of(String field) {
             return new SimpleField(field);
         }
 
         private SimpleField(String name) {
-            this.name = name;
+            this.expression = name;
+
+            name = name.trim();
+            if (name.contains("||")) {
+                String[] split = name.split(Pattern.quote("||"));
+                this.name = split[0].trim();
+                this.defaultValue = split.length > 1 ? split[1].trim() : "";
+            } else {
+                this.name = name;
+                this.defaultValue = null;
+            }
+        }
+
+        public boolean hasDefault() {
+            return defaultValue != null;
         }
 
         public <T> String  valueOf(T value) {

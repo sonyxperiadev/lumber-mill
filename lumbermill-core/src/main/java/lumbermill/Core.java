@@ -130,7 +130,7 @@ public class Core {
 
         MapWrap config = MapWrap.of(conf).assertExists("field");
         String field = config.asString("field");
-        List<String> toKeep = config.get("names", new ArrayList<>());
+        List<String> toKeep = config.getObject("names", new ArrayList<>());
 
         return jsonEvent -> {
             if (!jsonEvent.has(field)) {

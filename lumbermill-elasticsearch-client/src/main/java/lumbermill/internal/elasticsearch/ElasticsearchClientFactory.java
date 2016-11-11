@@ -69,11 +69,11 @@ public class ElasticsearchClientFactory {
                 isPrefix);
 
         if (config.exists("document_id")) {
-            es.withDocumentId(config.get("document_id"));
+            es.withDocumentId(config.asString("document_id"));
         }
 
         if (config.exists("signer")) {
-            es.withSigner(config.get("signer"));
+            es.withSigner(config.getObject("signer"));
         }
 
         if (config.exists("basic_auth")) {
@@ -96,21 +96,21 @@ public class ElasticsearchClientFactory {
         }
 
         if (config.exists("retry")) {
-            MapWrap retryConfig = MapWrap.of(config.get("retry")).assertExists("policy");
-            es.withRetryTimer(Observables.timer(retryConfig), retryConfig.get("attempts", DEFAULT_ATTEMPTS));
+            MapWrap retryConfig = MapWrap.of(config.getObject("retry")).assertExists("policy");
+            es.withRetryTimer(Observables.timer(retryConfig), retryConfig.asInt("attempts", DEFAULT_ATTEMPTS));
         }
 
         if (config.exists("dispatcher")) {
             LOGGER.info("Configuring http dispatcher");
-            MapWrap dispatchConfig = MapWrap.of(config.get("dispatcher"));
+            MapWrap dispatchConfig = MapWrap.of(config.getObject("dispatcher"));
             Dispatcher dispatcher = dispatchConfig.exists("threadpool")
-                    ? new Dispatcher(dispatchConfig.get("threadpool"))
+                    ? new Dispatcher(dispatchConfig.getObject("threadpool"))
                     : new Dispatcher();
             dispatcher.setMaxRequests(dispatchConfig.exists("max_concurrent_requests")
-                    ? dispatchConfig.get("max_concurrent_requests")
+                    ? dispatchConfig.asInt("max_concurrent_requests")
                     : dispatcher.getMaxRequests());
             dispatcher.setMaxRequestsPerHost(dispatchConfig.exists("max_concurrent_requests")
-                    ? dispatchConfig.get("max_concurrent_requests")
+                    ? dispatchConfig.asInt("max_concurrent_requests")
                     : dispatcher.getMaxRequestsPerHost());
             es.withDispatcher(dispatcher);
         }

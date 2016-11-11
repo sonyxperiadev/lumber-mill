@@ -42,7 +42,7 @@ class GZip {
         MapWrap parameters = MapWrap.of(map)
                 .assertExists("file");
         final StringTemplate template = parameters.asStringTemplate("file");
-        final String outputField = parameters.get("output_field", DEFAULT_COMPRESS_OUTPUT_FIELD);
+        final String outputField = parameters.asString("output_field", DEFAULT_COMPRESS_OUTPUT_FIELD);
 
         return event -> {
             File compressed = Streams.gzip(new File(template.format(event).get()));
@@ -60,7 +60,7 @@ class GZip {
         MapWrap parameters = MapWrap.of(map)
                 .assertExists("file");
         final StringTemplate template = parameters.asStringTemplate("file");
-        final String outputField = parameters.get("output_field", DEFAULT_DECOMPRESS_OUTPUT_FIELD);
+        final String outputField = parameters.asString("output_field", DEFAULT_DECOMPRESS_OUTPUT_FIELD);
 
         return event -> {
             File decompressed = Streams.gunzip(new File(template.format(event).get()));

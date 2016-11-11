@@ -44,8 +44,8 @@ public class Grok<E extends Event> {
         MapWrap mapWrap = MapWrap.of(conf).assertExists("field", "pattern");
         lumbermill.internal.transformers.Grok grok = GrokFactory.create(mapWrap.asString("field"),
                 mapWrap.asString("pattern"),
-                mapWrap.get("tagOnFailure", true),
-                mapWrap.get("tag", GrokFactory.ERROR_TAG));
+                mapWrap.asBoolean("tagOnFailure", true),
+                mapWrap.asString("tag", GrokFactory.ERROR_TAG));
 
         return t -> grok.parse(t);
     }
@@ -54,8 +54,8 @@ public class Grok<E extends Event> {
         MapWrap mapWrap = MapWrap.of(parameters).assertExists("field", "pattern");
         lumbermill.internal.transformers.Grok grok = GrokFactory.create(mapWrap.asString("field"),
                 mapWrap.asString("pattern"),
-                mapWrap.get("tagOnFailure", true),
-                mapWrap.get("tag", GrokFactory.ERROR_TAG));
+                mapWrap.asBoolean("tagOnFailure", true),
+                mapWrap.asString("tag", GrokFactory.ERROR_TAG));
         return events -> grok.parse(events);
     }
 }

@@ -31,7 +31,7 @@ public abstract class MetaDataEvent implements Event {
 
     @Override
     public boolean hasTag(String tag) {
-        List<String> tags = map.get("tags");
+        List<String> tags = map.getObject("tags");
         return tags.contains(tag);
     }
 
@@ -53,17 +53,17 @@ public abstract class MetaDataEvent implements Event {
 
     @Override
     public <T> T get(String key) {
-        return (T)map.get(key);
+        return (T)map.getObject(key);
     }
 
     public Event addTag(String tag) {
-        List<String> tags = map.get("tags");
+        List<String> tags = map.getObject("tags");
         tags.add(tag);
         return this;
     }
 
     public void addTags(List<String> tags) {
-        List<String> tagss = map.get("tags");
+        List<String> tagss = map.getObject("tags");
         tagss.addAll(tags);
     }
 

@@ -72,8 +72,8 @@ public class RetryStrategyImpl implements RetryStrategy {
     @Override
     public Func1<Observable<? extends Throwable>, Observable<?>> withLinearDelay(Map map) {
         MapWrap arguments = MapWrap.of(map);
-        int attempts   = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
-        int delayInMs  = arguments.get("delay",    DEFAULT_FIXED_DELAY_MS);
+        int attempts   = arguments.asInt("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
+        int delayInMs  = arguments.asInt("delay",    DEFAULT_FIXED_DELAY_MS);
         return doCreate(attempts, Observables.linearTimer(delayInMs));
     }
 
@@ -101,8 +101,8 @@ public class RetryStrategyImpl implements RetryStrategy {
     @Override
     public Func1<Observable<? extends Throwable>, Observable<?>> withFixedDelay(Map map) {
         MapWrap arguments = MapWrap.of(map);
-        int attempts   = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
-        int delayInMs  = arguments.get("delay", DEFAULT_FIXED_DELAY_MS);
+        int attempts   = arguments.asInt("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
+        int delayInMs  = arguments.asInt("delay", DEFAULT_FIXED_DELAY_MS);
         return doCreate(attempts, Observables.fixedTimer(delayInMs));
     }
 
@@ -132,7 +132,7 @@ public class RetryStrategyImpl implements RetryStrategy {
 
         final MapWrap arguments = MapWrap.of(map);
 
-        int attempts = arguments.get("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
+        int attempts = arguments.asInt("attempts", DEFAULT_FIXED_DELAY_ATTEMPTS);
         int seedMs   = arguments.exists("seed") ? arguments.asInt("seed") : DEFAULT_EXPONENTIAL_SEED;
         return doCreate(attempts, Observables.exponentialTimer(seedMs));
 
