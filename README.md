@@ -97,14 +97,7 @@ If you need basic auth add
     -e user=username -e passwd=somepasswd
 
 
-The code for indexing a single file looks like this, complete code is available under lumbermill-simple-samples.
-
-Templates are used to read values from System.getenv, System.getProperty or JsonEvent fields. If a value does not exist,
-it is possible to supply an optional default value.
-
-    'My name is {user || johan}' // try to find env user and if not found it will use default value johan
-    
-    
+The code for indexing a single file looks like this, complete code is available under lumbermill-simple-samples.    
 
 ```groovy
 file.readFileAsLines (
