@@ -225,13 +225,14 @@ public class ElasticSearchOkHttpClientImpl {
             ElasticSearchBulkResponse bulkResponse = ElasticSearchBulkResponse.parse(
                     request.signableRequest, response);
             if (bulkResponse.hasErrors()) {
-                if (request.hasNextAttempt()) {
-                   request.nextAttempt(bulkResponse)
-                           .doOnNext(requestContext -> post(requestContext))
-                           .doOnError(throwable -> request.error(throwable))
-                           .subscribe();
-                } else {
+                Optional<Observable<RequestContext>> requestContextObservable = request.nextAttempt(bulkResponse);
+                if (!requestContextObservable.isPresent()) {
                     request.done(bulkResponse);
+                } else {
+                    requestContextObservable.get()
+                            .doOnNext(requestContext -> post(requestContext))
+                            .doOnError(throwable -> request.error(throwable))
+                            .subscribe();
                 }
             } else {
                 request.done(bulkResponse);
@@ -358,7 +359,6 @@ public class ElasticSearchOkHttpClientImpl {
 
     public static FatalIndexException createFatalIndexException(RequestSigner.SignableRequest request, Response response) {
         try {
-            LOGGER.error("Fatal exception from body: " + new String(request.payload().get()));
             return new FatalIndexException(response.code() + ", message:" + response.message() +
                     ", body: " + response.body().string());
         } catch (IOException e) {
@@ -456,16 +456,16 @@ public class ElasticSearchOkHttpClientImpl {
 
         }
 
-        public boolean hasNextAttempt() {
+        private boolean hasNextAttempt() {
             return attempt.get() > ElasticSearchOkHttpClientImpl.this.retryAttempts ? false : true;
         }
 
 
-        public Observable<RequestContext> nextAttempt(ElasticSearchBulkResponse result) {
+        public Optional<Observable<RequestContext>> nextAttempt(ElasticSearchBulkResponse result) {
             updateResponseEvent(result);
             Optional<RequestSigner.SignableRequest> signableRequest = failedRecords(result);
             if (!signableRequest.isPresent()) {
-                return Observable.empty();
+                return Optional.empty();
             }
             this.signableRequest = signableRequest.get();
             this.attempt.incrementAndGet();
@@ -475,7 +475,7 @@ public class ElasticSearchOkHttpClientImpl {
                 throw ex;
             }
 
-            return Observables.just(this).withDelay(timer);
+            return Optional.of(Observables.just(this).withDelay(timer));
         }
 
         private synchronized void updateResponseEvent(ElasticSearchBulkResponse bulkResponse) {
@@ -490,8 +490,8 @@ public class ElasticSearchOkHttpClientImpl {
             List<JsonEvent> retryableItems = result.getRetryableItems(this.signableRequest);
 
             if (retryableItems.size() == 0) {
-                LOGGER.debug("No retryable items found, no retry required");
-                return Optional.empty();
+                // This occurs if we got errors but they where all 400 BAD REQUEST, these will not be retried
+                 return Optional.empty();
             }
             return Optional.of(new ElasticSearchRequest(retryableItems, url));
         }
@@ -499,7 +499,7 @@ public class ElasticSearchOkHttpClientImpl {
         public void done(ElasticSearchBulkResponse bulkResponse) {
             // Fix return ALL + ES response
             updateResponseEvent(bulkResponse);
-            LOGGER.debug("Done() free {}, max {}", Runtime.getRuntime().freeMemory(), Runtime.getRuntime().maxMemory());
+            LOGGER.debug("Done() free {}, max {}, events: ", Runtime.getRuntime().freeMemory(), Runtime.getRuntime().maxMemory());
             this.subject.onNext(response);
             this.subject.onCompleted();
         }
