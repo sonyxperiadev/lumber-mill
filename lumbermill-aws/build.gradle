@@ -6,6 +6,8 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-sts:$awsVersion"
     compile "com.amazonaws:aws-java-sdk-s3:$awsVersion"
     compile "com.amazonaws:aws-java-sdk-kinesis:$awsVersion"
+    compile "com.amazonaws:aws-java-sdk-core:$awsVersion"
+
 }
 
 

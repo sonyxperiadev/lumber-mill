@@ -2,7 +2,7 @@ apply plugin: 'java'
 
 dependencies {
     compile project (':lumbermill-core')
-    compile 'com.amazonaws:amazon-kinesis-client:1.6.1'
+    compile 'com.amazonaws:amazon-kinesis-client:1.7.1'
     compile 'ch.qos.logback:logback-core:1.1.7'
     compile 'ch.qos.logback:logback-classic:1.1.7'
 }

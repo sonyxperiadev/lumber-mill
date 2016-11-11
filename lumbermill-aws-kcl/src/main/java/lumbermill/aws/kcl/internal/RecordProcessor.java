@@ -15,10 +15,11 @@
 package lumbermill.aws.kcl.internal;
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessor;
+
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason;
 import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput;
-import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
 import lumbermill.api.Codecs;
 import lumbermill.aws.kcl.KCL;
