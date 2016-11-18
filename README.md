@@ -4,8 +4,8 @@
 *Lumber Mill is under heavy development/refactoring so expect api changes to occur*
 
 ### What is Lumber Mill?
-*Log Collection & Processing on AWS, with focus on fetching logs from S3, Cloudwatch Logs and Kinesis.
-It currently supports for writing to Kinesis, S3, Elasticsearch (incl AWS Elasticsearch Service), Influxdb & Graphite. It also 
+*Reactive API for Log Collection & Processing on AWS, with focus on fetching logs from S3, Cloudwatch Logs and Kinesis.
+It currently supports writing to Kinesis, S3, Elasticsearch (incl AWS Elasticsearch Service), Influxdb & Graphite. It also 
 has support for mutating functions like grok, compression etc. The processing pipeline is based on RxJava.*
 
 
