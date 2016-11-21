@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URL;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.stream.Collectors.toList;
 
@@ -446,6 +448,11 @@ public class ElasticSearchOkHttpClientImpl {
         public AtomicInteger attempt = new AtomicInteger(1);
 
         /**
+         * Start time of the request
+         */
+        public long start = System.currentTimeMillis();
+
+        /**
          * The timer for each request
          */
         public Timer timer = ElasticSearchOkHttpClientImpl.this.timerFactory.create();
@@ -498,13 +505,18 @@ public class ElasticSearchOkHttpClientImpl {
 
         public void done(ElasticSearchBulkResponse bulkResponse) {
             // Fix return ALL + ES response
+            LOGGER.debug("Request took {} seconds / {} attempts / events {}",
+                    Duration.ofMillis(System.currentTimeMillis() - start).getSeconds(),
+                    attempt.get(), events.size());
             updateResponseEvent(bulkResponse);
-            LOGGER.debug("Done() free {}, max {}, events: ", Runtime.getRuntime().freeMemory(), Runtime.getRuntime().maxMemory());
             this.subject.onNext(response);
             this.subject.onCompleted();
         }
 
         public void error(Throwable t) {
+            LOGGER.debug("Request took {} seconds / {} attempts and ended with error {}:{}",
+                    Duration.ofMillis(System.currentTimeMillis() - start).getSeconds(),
+                    attempt.get(), t.getClass().getSimpleName(), t.getMessage());
             this.subject.onError(t);
         }
     }
