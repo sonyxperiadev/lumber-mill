@@ -2,6 +2,10 @@ FROM java:8-jre
 
 WORKDIR /srv
 
+RUN wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
+RUN gunzip GeoLite2-City.mmdb.gz
+
+
 COPY build/install/lumbermill-simple-samples lumbermill-simple-samples
 ADD  src/main/groovy /srv
 
