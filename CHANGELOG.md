@@ -2,6 +2,10 @@
 
 ### [Unreleased / master] Version 0.0.22-SNAPSHOT
 
+ * Improved templating so environments variables and system properties can be read
+   at boot.
+   
+ * Twitter feed to be used when experimenting  
 
 ### 0.0.21
 
