@@ -2,7 +2,11 @@
 
 dependencies {
 
-    compile 'com.maxmind.geoip2:geoip2:2.8.0'
+    compile ('com.maxmind.geoip2:geoip2:2.8.0') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.databind'
+        exclude group: 'com.fasterxml.jackson.annotations'
+    }
     compile project(':lumbermill-core')
 }
 

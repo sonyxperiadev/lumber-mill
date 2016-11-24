@@ -16,29 +16,38 @@ package lumbermill.internal.spatial;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lumbermill.api.Codecs;
 import lumbermill.api.JsonEvent;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Optional;
+
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-//@Ignore
+/**
+ *
+ * Since we do not bundle maxmind database tests are not executed on jenkins, they are run before push.
+ * Consider how this can be solved properly
+ */
 public class GeoIPTest {
 
-
-    // Ignored since we do not have database on travis
     @Ignore
     @Test
-    public void test_geoip_no_database_found() {
-        GeoIP geoIP = new GeoIP("client_ip");
+    public void test_geoip_all_fields() {
+        GeoIP geoIP = GeoIP.Factory.create("client_ip", Optional.of("geoip"), Optional.of(new File("/tmp/GeoLite2-City.mmdb")), Optional.empty());
         JsonEvent event = Codecs.TEXT_TO_JSON.from("Hello").put("client_ip", "37.139.156.40");
         geoIP.decorate(event);
 
         JsonNode geoip = event.unsafe().get("geoip");
         assertThat(geoip.get("country_code2").asText()).isEqualTo("SE");
+        assertThat(geoip.get("country_code3").asText()).isEqualTo("SE");
+        assertThat(geoip.get("timezone").asText()).isEqualTo("Europe/Stockholm");
         assertThat(geoip.get("continent_code").asText()).isEqualTo("EU");
-        assertThat(geoip.get("continent").asText()).isEqualTo("Europe");
+        assertThat(geoip.get("continent_name").asText()).isEqualTo("Europe");
         assertThat(geoip.get("country_name").asText()).isEqualTo("Sweden");
         assertThat(geoip.get("city_name").asText()).isEqualTo("Sodra Sandby");
         assertThat(geoip.get("longitude").asDouble()).isEqualTo(13.3333);
@@ -46,5 +55,35 @@ public class GeoIPTest {
         ArrayNode location = (ArrayNode)geoip.get("location");
         assertThat(location.get(0).asDouble()).isEqualTo(13.3333);
         assertThat(location.get(1).asDouble()).isEqualTo(55.7167);
+        System.out.println(event);
     }
+
+    @Ignore
+    @Test
+    public void test_geoip_some_fields() {
+        GeoIP geoIP = GeoIP.Factory.create("client_ip",
+                Optional.of("geoip2"),
+                Optional.of(new File("/tmp/GeoLite2-City.mmdb")),
+                Optional.of(asList("timezone", "location")));
+
+        JsonEvent event = Codecs.TEXT_TO_JSON.from("Hello").put("client_ip", "37.139.156.40");
+        geoIP.decorate(event);
+
+        JsonNode geoip = event.unsafe().get("geoip2");
+        assertThat(geoip.get("country_code2")).isNull();
+        assertThat(geoip.get("country_code3")).isNull();
+        assertThat(geoip.get("timezone").asText()).isEqualTo("Europe/Stockholm");
+        assertThat(geoip.get("continent_code")).isNull();
+        assertThat(geoip.get("continent_name")).isNull();
+        assertThat(geoip.get("country_name")).isNull();
+        assertThat(geoip.get("city_name")).isNull();
+        assertThat(geoip.get("longitude")).isNull();
+        assertThat(geoip.get("latitude")).isNull();
+        ArrayNode location = (ArrayNode)geoip.get("location");
+        assertThat(location.get(0).asDouble()).isEqualTo(13.3333);
+        assertThat(location.get(1).asDouble()).isEqualTo(55.7167);
+        System.out.println(event);
+    }
+
+
 }

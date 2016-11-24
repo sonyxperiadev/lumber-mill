@@ -15,7 +15,6 @@
 package lumbermill.internal.spatial;
 
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
@@ -31,76 +30,174 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.Optional;
 
+import static java.util.Arrays.asList;
+
+/**
+ *
+ */
 public class GeoIP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoIP.class);
 
+
+    private static String DEFAULT_TARGET = "geoip";
+
+    private static final List<String> DEFAULT_FIELDS = asList (
+            "country_code2",
+            "country_code3",
+            "country_name",
+            "continent_code",
+            "continent_name",
+            "city_name",
+            "timezone",
+            "locationOf",
+            "latitude",
+            "longitude"
+    );
+
+
+    /**
+     * Fields that will be included in geoip node, Optional
+     */
+    private final List<String> fields;
+
+    /**
+     * GeoIP database
+     */
     private final DatabaseReader reader;
 
+    /**
+     * Field where to read ip address in json
+     */
     private final String sourceField;
 
-    public GeoIP(String sourceField, File path) {
+    private final String targetField;
+
+
+    /**
+     *
+     * @param sourceField Muse
+     * @param reader
+     * @param fields
+     */
+    private GeoIP(String sourceField, String targetField, DatabaseReader reader, List<String> fields) {
         this.sourceField = sourceField;
-        try {
-            reader = new DatabaseReader.Builder(path).withCache(new CHMCache()).build();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to open Geo database file" + path, e);
-        }
+        this.targetField = targetField;
+        this.fields = fields;
+        this.reader = reader;
     }
-
-    public GeoIP(String sourceField){
-        try {
-            this.sourceField = sourceField;
-            URL resource = Thread.currentThread().getContextClassLoader().getResource("GeoLite2-City.mmdb");
-            reader = new DatabaseReader.Builder(resource.openStream())
-                    .withCache(new CHMCache()).build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    private CityResponse location(String ip) {
-
-        try {
-            InetAddress ipAddress = InetAddress.getByName(ip);
-            return reader.city(ipAddress);
-        } catch (UnknownHostException e) {
-            return null;
-        } catch (GeoIp2Exception e) {
-
-            return null;
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
 
     public JsonEvent decorate(JsonEvent event) {
-        String ip = event.valueAsString(sourceField);
-        CityResponse location = location(ip);
-        if (location == null) {
+        if (!event.has(sourceField)) {
             return event;
         }
-        ObjectNode geoIpNode = Json.OBJECT_MAPPER.createObjectNode();
-        geoIpNode.put("country_code2", location.getCountry().getIsoCode());
-        geoIpNode.put("continent_code", location.getContinent().getCode());
-        geoIpNode.put("continent", location.getContinent().getName());
-        geoIpNode.put("country_name", location.getCountry().getName());
-        if (location.getCity() != null) {
-            geoIpNode.put("city_name", location.getCity().getName());
-        }
-        if (location.getLocation() != null) {
-            ArrayNode locationNode = Json.createArrayNode(
-                    location.getLocation().getLongitude().doubleValue(),
-                    location.getLocation().getLatitude().doubleValue());
-            geoIpNode.put("longitude", location.getLocation().getLongitude().doubleValue());
-            geoIpNode.put("latitude",  location.getLocation().getLatitude().doubleValue());
-            geoIpNode.set("location", locationNode);
+        String ip = event.valueAsString(sourceField);
+        Optional<CityResponse> locationOptional = locationOf(ip);
+        if (!locationOptional.isPresent()) {
+            return event;
         }
 
-        event.unsafe().set("geoip", geoIpNode);
+        CityResponse location = locationOptional.get();
+
+        ObjectNode geoIpNode = Json.OBJECT_MAPPER.createObjectNode();
+
+        // Wrapper objects are never null but actual values can be null
+        put(geoIpNode, "country_code2", location.getCountry().getIsoCode());
+        put(geoIpNode, "country_code3", location.getCountry().getIsoCode());
+        put(geoIpNode, "country_name", location.getCountry().getName());
+        put(geoIpNode, "continent_code", location.getContinent().getCode());
+        put(geoIpNode, "continent_name", location.getContinent().getName());
+        put(geoIpNode, "city_name", location.getCity().getName());
+        put(geoIpNode, "timezone", location.getLocation().getTimeZone());
+        put(geoIpNode, "latitude", location.getLocation().getLatitude().doubleValue());
+        put(geoIpNode, "longitude", location.getLocation().getLongitude().doubleValue());
+
+        geoIpNode.set("location", Json.createArrayNode (
+               location.getLocation().getLongitude().doubleValue(),
+               location.getLocation().getLatitude().doubleValue()));
+
+        event.unsafe().set(targetField, geoIpNode);
         return event;
     }
+
+    private Optional<CityResponse> locationOf(String ip) {
+        try {
+            InetAddress ipAddress = InetAddress.getByName(ip);
+            CityResponse response = reader.city(ipAddress);
+            if (!hasLocations(response)) {
+                return Optional.empty();
+            }
+            return Optional.of(response);
+        } catch (UnknownHostException e) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("UnknownHostException: " + ip);
+            }
+        } catch (GeoIp2Exception e) {
+            LOGGER.warn("Unexpected GeoIp2Exception", e);
+        } catch (IOException e) {
+            LOGGER.warn("Unexpected IOException", e);
+        }
+        return Optional.empty();
+    }
+
+
+    private boolean hasLocations(CityResponse location) {
+        if (location == null || (location.getLocation().getLatitude() == null
+                || location.getLocation().getLongitude() == null)) {
+            return false;
+        }
+        return true;
+    }
+
+    private void put(ObjectNode node, String field, Double value) {
+        if (fields.contains(field)) {
+            if (value != null) {
+                node.put(field, value);
+            }
+        }
+    }
+
+    private void put(ObjectNode node, String field, String value) {
+        if (fields.contains(field)) {
+            if (value != null) {
+                node.put(field, value);
+            }
+        }
+    }
+
+    public static class Factory {
+
+        public static GeoIP create(String source, Optional<String> target, Optional<File> path, Optional<List<String>> fields) {
+            String theTarget          = target.isPresent() ? target.get() : DEFAULT_TARGET;
+            DatabaseReader  theReader = path.isPresent() ? fromFile(path.get()) : fromClasspath();
+            List<String> theFields    = fields.isPresent() ? fields.get() : DEFAULT_FIELDS;
+
+            return new GeoIP(source, theTarget, theReader, theFields);
+        }
+
+        private static DatabaseReader fromFile(File path) {
+            try {
+                LOGGER.info("Opening GeoIP database from file {}", path);
+                return new DatabaseReader.Builder(path).withCache(new CHMCache()).build();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to open Geo database file" + path, e);
+            }
+        }
+
+        private static DatabaseReader fromClasspath() {
+            try {
+                LOGGER.info("Trying to open database GeoLite2-City.mmdb from classpath");
+                URL resource = Thread.currentThread().getContextClassLoader().getResource("GeoLite2-City.mmdb");
+                return new DatabaseReader.Builder(resource.openStream())
+                        .withCache(new CHMCache()).build();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to open GeoLite2-City.mmdb database in classpath", e);
+            }
+        }
+    }
+
+
 }

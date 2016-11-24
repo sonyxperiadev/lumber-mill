@@ -22,18 +22,35 @@ import rx.Observable;
 import rx.functions.Func1;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Spatial {
 
+    public static final String TARGET   = "target";
+    public static final String DATABASE = "database";
+    public static final String FIELDS   = "fields";
+    public static final String SOURCE   = "source";
+
+    /**
+     * Factory method for simple integration into RxJava pipeline
+     */
     public static Func1<JsonEvent, Observable<JsonEvent>> geoip(Map map) {
 
-        MapWrap conf = MapWrap.of(map).assertExists("field");
-        String field = conf.asString("field");
-
-        final GeoIP geoIP = conf.exists("path") ? new GeoIP(field, new File(conf.asString("path"))) : new GeoIP(field);
+        GeoIP geoIP = create(map);
 
         return jsonEvent -> Observable.just(geoIP.decorate(jsonEvent));
     }
 
+
+    private static GeoIP create(Map map) {
+        MapWrap conf = MapWrap.of(map).assertExists(SOURCE);
+
+        return GeoIP.Factory.create(conf.asString(SOURCE),
+                conf.exists(TARGET) ? Optional.of(TARGET) : Optional.empty(),
+                conf.exists(DATABASE) ? Optional.of(new File(conf.asString(DATABASE))) : Optional.empty(),
+                conf.exists(FIELDS) ? Optional.of(conf.getObject(FIELDS)) : Optional.empty());
+    }
 }
