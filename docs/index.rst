@@ -43,9 +43,15 @@ interest for devops, monitoring and log processing and who want total control of
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   Home <self>
    one_minute_intro
+   mutate
+   sinks
+   sources
+
+
 
 Indices and tables
 ==================
