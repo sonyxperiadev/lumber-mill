@@ -136,7 +136,9 @@ public class GeoIP {
                 LOGGER.trace("UnknownHostException: " + ip);
             }
         } catch (GeoIp2Exception e) {
-            LOGGER.warn("Unexpected GeoIp2Exception", e);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("Unexpected GeoIp2Exception: " + e.getMessage());
+            }
         } catch (IOException e) {
             LOGGER.warn("Unexpected IOException", e);
         }
