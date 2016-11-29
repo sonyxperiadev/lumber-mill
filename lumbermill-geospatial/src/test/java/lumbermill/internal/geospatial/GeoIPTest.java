@@ -12,11 +12,10 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package lumbermill.internal.spatial;
+package lumbermill.internal.geospatial;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lumbermill.api.Codecs;
 import lumbermill.api.JsonEvent;
 import org.junit.Ignore;

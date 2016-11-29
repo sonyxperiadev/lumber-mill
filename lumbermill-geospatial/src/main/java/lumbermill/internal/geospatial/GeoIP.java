@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package lumbermill.internal.spatial;
+package lumbermill.internal.geospatial;
 
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,6 +20,7 @@ import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
+import com.sun.org.apache.bcel.internal.generic.GETFIELD;
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.Json;
 import org.slf4j.Logger;
@@ -30,8 +31,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 
@@ -172,12 +172,24 @@ public class GeoIP {
 
     public static class Factory {
 
-        public static GeoIP create(String source, Optional<String> target, Optional<File> path, Optional<List<String>> fields) {
-            String theTarget          = target.isPresent() ? target.get() : DEFAULT_TARGET;
-            DatabaseReader  theReader = path.isPresent() ? fromFile(path.get()) : fromClasspath();
-            List<String> theFields    = fields.isPresent() ? fields.get() : DEFAULT_FIELDS;
+        // No need to bother about threadsafety
+        private static final Map<String, GeoIP> CACHE = new HashMap<>();
 
-            return new GeoIP(source, theTarget, theReader, theFields);
+        public static GeoIP create(String source, Optional<String> target, Optional<File> path, Optional<List<String>> fields) {
+
+            String theTarget          = target.isPresent() ? target.get() : DEFAULT_TARGET;
+            List<String> theFields    = fields.isPresent() ? fields.get() : DEFAULT_FIELDS;
+            String key = key(source, theTarget, path, theFields);
+
+            if (CACHE.containsKey(key)) {
+                return CACHE.get(key);
+            }
+
+            DatabaseReader  theReader = path.isPresent() ? fromFile(path.get()) : fromClasspath();
+            GeoIP geoIP = new GeoIP(source, theTarget, theReader, theFields);
+            CACHE.put(key, geoIP);
+
+            return geoIP;
         }
 
         private static DatabaseReader fromFile(File path) {
@@ -198,6 +210,14 @@ public class GeoIP {
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to open GeoLite2-City.mmdb database in classpath", e);
             }
+        }
+
+        private static String key(String source, String target, Optional<File> path, List<String> fields) {
+            return new StringBuilder()
+                    .append(source)
+                    .append(target)
+                    .append(path.isPresent() ? path.get().getAbsolutePath() : "")
+                    .append(Arrays.toString(fields.toArray())).toString();
         }
     }
 

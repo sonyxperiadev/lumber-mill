@@ -6,7 +6,7 @@ dependencies {
     compile project(':lumbermill-aws-kcl')
     compile project(':lumbermill-elasticsearch-client')
     compile project(':lumbermill-twitter')
-    compile project(':lumbermill-spatial')
+    compile project(':lumbermill-geospatial')
     compile 'ch.qos.logback:logback-classic:1.1.6'
     compile 'ch.qos.logback:logback-core:1.1.6'
 }

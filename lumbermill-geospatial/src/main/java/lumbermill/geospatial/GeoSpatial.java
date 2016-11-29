@@ -12,22 +12,20 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package lumbermill.spatial;
+package lumbermill.geospatial;
 
 
 import lumbermill.api.JsonEvent;
 import lumbermill.internal.MapWrap;
-import lumbermill.internal.spatial.GeoIP;
+import lumbermill.internal.geospatial.GeoIP;
 import rx.Observable;
 import rx.functions.Func1;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class Spatial {
+public class GeoSpatial {
 
     public static final String TARGET   = "target";
     public static final String DATABASE = "database";
@@ -49,7 +47,7 @@ public class Spatial {
         MapWrap conf = MapWrap.of(map).assertExists(SOURCE);
 
         return GeoIP.Factory.create(conf.asString(SOURCE),
-                conf.exists(TARGET) ? Optional.of(TARGET) : Optional.empty(),
+                conf.exists(TARGET) ? Optional.of(conf.asString(TARGET)) : Optional.empty(),
                 conf.exists(DATABASE) ? Optional.of(new File(conf.asString(DATABASE))) : Optional.empty(),
                 conf.exists(FIELDS) ? Optional.of(conf.getObject(FIELDS)) : Optional.empty());
     }

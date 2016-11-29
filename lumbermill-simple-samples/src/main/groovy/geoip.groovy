@@ -1,21 +1,20 @@
 import lumbermill.api.Codecs
 
+import rx.Observable
 import static lumbermill.Core.console
-import static lumbermill.spatial.Spatial.geoip
+import static lumbermill.geospatial.GeoSpatial.geoip
 
 /*
-  This requires the database to exist in /tmp directory
-  Run the following to download and extract
-
-  (cd /tmp && wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz && gunzip GeoLite2-City.mmdb.gz)
+   Run this with 'docker run lifelog/lumber-mill:latest geoip.groovy'
 */
 
-Codecs.TEXT_TO_JSON.from("Hello").put("client_ip", "37.139.156.40")
-.toObservable()
+Observable.just(
+        Codecs.TEXT_TO_JSON.from("Hello").put("client_ip", "37.139.156.40"),
+        Codecs.TEXT_TO_JSON.from("World").put("client_ip", "37.139.156.40"))
 .flatMap(
     geoip (
-            'field': 'client_ip',
-            'path' : '/srv/GeoLite2-City.mmdb'
+            'source': 'client_ip',
+            'database' : '/srv/GeoLite2-City.mmdb'
     )
 )
 .doOnNext(console.stdout())
