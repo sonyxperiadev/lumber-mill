@@ -9,7 +9,7 @@ Stores events in Elasticsearch
 
 .. code-block:: groovy
 
-    compile 'com.sonymobile:lumbermil-elasticsearch-client:$version'
+    compile 'com.sonymobile:lumbermill-elasticsearch-client:$version'
 
 
 *Groovy script*

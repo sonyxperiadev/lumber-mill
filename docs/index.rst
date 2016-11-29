@@ -46,10 +46,11 @@ Contents:
    :maxdepth: 1
 
    Home <self>
-   one_minute_intro
+   five_minute_intro
    mutate
-   sinks
    sources
+   sinks
+
 
 
 

@@ -1,4 +1,4 @@
-One minute intro
+Five minute intro
 ===============
 
 Short introduction of the background of Lumber-Mill, why it exists and who it is usable for.

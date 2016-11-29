@@ -9,7 +9,7 @@ Stores metrics in graphite using carbon line protocol.
 
 .. code-block:: groovy
 
-    compile 'com.sonymobile:lumbermil-graphite:$version'
+    compile 'com.sonymobile:lumbermill-graphite:$version'
 
 
 *Groovy script*
