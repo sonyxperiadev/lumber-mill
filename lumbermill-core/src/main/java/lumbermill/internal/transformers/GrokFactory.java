@@ -14,7 +14,7 @@
  */
 package lumbermill.internal.transformers;
 
-import oi.thekraken.grok.api.exception.GrokException;
+import io.thekraken.grok.api.exception.GrokException;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,9 +36,9 @@ public class GrokFactory {
         return new Grok(internal(pattern), field, pattern, true, ERROR_TAG);
     }
 
-    private static oi.thekraken.grok.api.Grok internal(String pattern) {
+    private static io.thekraken.grok.api.Grok internal(String pattern) {
         try {
-            oi.thekraken.grok.api.Grok grok =  new oi.thekraken.grok.api.Grok();
+            io.thekraken.grok.api.Grok grok =  new io.thekraken.grok.api.Grok();
             grok.copyPatterns(GROK_TEMPLATE.getPatterns());
             grok.compile(pattern, true);
             return grok;
@@ -51,7 +51,7 @@ public class GrokFactory {
      * Template is created once and files are read, each parse instance is then having its patterns
      * copied from template instead of reading files again.
      */
-    private static final oi.thekraken.grok.api.Grok GROK_TEMPLATE = new oi.thekraken.grok.api.Grok();
+    private static final io.thekraken.grok.api.Grok GROK_TEMPLATE = new io.thekraken.grok.api.Grok();
 
     static {
         try {

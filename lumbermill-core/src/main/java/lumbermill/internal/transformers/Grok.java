@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
-import oi.thekraken.grok.api.Match;
+import io.thekraken.grok.api.Match;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -61,13 +61,13 @@ public class Grok<E extends Event>  {
     /**
      * Grok instance
      */
-    private final oi.thekraken.grok.api.Grok internal;
+    private final io.thekraken.grok.api.Grok internal;
 
 
     /**
      * Use GrokFactory to create
      */
-     Grok(oi.thekraken.grok.api.Grok internal, String field, String pattern, boolean shouldtag, String errorTagName) {
+     Grok(io.thekraken.grok.api.Grok internal, String field, String pattern, boolean shouldtag, String errorTagName) {
         this.internal = internal;
         this.field = field;
         this.pattern = pattern;
