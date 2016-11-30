@@ -19,3 +19,9 @@ AWS_LAMBDA_REQUEST_REPORT REPORT RequestId: %{UUID}\tDuration: %{NUMBER:lambda_d
 
 # ELB Log line. Does not yet cover all cases, there are some differences.
 AWS_ELB_LOG %{TIMESTAMP_ISO8601:timestamp} %{NOTSPACE:loadbalancer} %{IP:client_ip}:%{NUMBER:client_port:int} (?:%{IP:backend_ip}:%{NUMBER:backend_port:int}|-) %{NUMBER:request_processing_time:float} %{NUMBER:backend_processing_time:float} %{NUMBER:response_processing_time:float} %{NUMBER:elb_status_code:int} %{NUMBER:backend_status_code:int} %{NUMBER:received_bytes:int} %{NUMBER:sent_bytes:int} "(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})" %{QS:useragent}
+
+# https://gist.github.com/brandond/cc57062e4eb8628ec20c53f836882a67
+# VPC Flow Log fields
+# version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
+# http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-log-records
+AWS_FLOW_LOG %{NUMBER:version} %{NUMBER:account_id} %{NOTSPACE:interface_id} %{NOTSPACE:srcaddr} %{NOTSPACE:dstaddr} %{NOTSPACE:srcport} %{NOTSPACE:dstport} %{NOTSPACE:protocol} %{NOTSPACE:packets:long} %{NOTSPACE:bytes:long} %{NUMBER:start:int} %{NUMBER:end:int} %{NOTSPACE:action} %{NOTSPACE:log_status}
