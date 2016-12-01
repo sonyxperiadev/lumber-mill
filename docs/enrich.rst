@@ -1,5 +1,5 @@
-Mutating functions
-==================
+Enriching functions
+===================
 
 Functions used in the pipeline to mutate/enrich the event contents.
 
@@ -159,6 +159,29 @@ The conditional functions can:
         fingerprint.md5()
     })
 
+Filters
+-------
+
+RxJava provides the *observable.filter()* operation that can be used to keep or skip data. Lumber-Mill provides two
+functions that can be used together with filter.
+
+The expression uses JavaScript, so it must be valid javascript and must return a boolean value.
+
+.. code-block:: groovy
+
+    // Strings
+    o.filter( keepWhen("'{name}' == 'Johan'"))
+
+    // Numbers
+    o.filter( skipWhen("{age} == 99"))
+
+    // Boolean
+    o.filter( skipWhen("{isHappy} == false)")
+
+    // Array
+    o.filter( keepWhen("{tags}.contains('Johan')")
+
+
 Grok
 ----
 
@@ -202,11 +225,10 @@ To prevent classpath issues, you must exclude jackson dependencies when dependin
         )
     )
 
-
 Important, the GeoLite2-City.mmdb **MUST** be downloaded and imported from the project
 that depends on this module, the database in **NOT** included in the distribution.
 
-.. code-block:: bash
+.. code-block:: guess
     wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
     gunzip GeoLite2-City.mmdb.gz
 
@@ -214,13 +236,13 @@ that depends on this module, the database in **NOT** included in the distributio
 The database file can be opened from classpath if you make it available there, and this
 is default behaviour.
 
-.. code-block:: bash
+.. code-block:: guess
     mv GeoLite2-City.mmdb your_project/src/main/resources
 
 
 Or it can be located somewhere on the filesystem
 
-.. code-block:: bash
+.. code-block:: guess
     mv GeoLite2-City.mmdb /tmp
 
 .. code-block:: groovy
@@ -231,7 +253,7 @@ Or it can be located somewhere on the filesystem
 
 Simply prepare the image with the maxmind database
 
-.. code-block:: bash
+.. code-block:: docker
     WORKDIR /srv
     RUN wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
     RUN gunzip GeoLite2-City.mmdb.gz

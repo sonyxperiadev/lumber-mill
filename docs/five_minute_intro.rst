@@ -33,8 +33,8 @@ often have high concurrency, io and cpu.
 
 **When should you use it?**
 
-If you run on AWS, you want a simple (not easy) way of collecting your logs. Perhaps you want to run it as AWS Lambdas and connect
-to S3, Kines and/or Cloudwatch Logs.
+If you run on AWS, you want a simple  way of collecting your logs. Perhaps you want to run it as AWS Lambdas and connect
+to S3, Kinesis and/or Cloudwatch Logs (incl Cloudtrail and VPC FLow Logs)
 
 **Who is it for?**
 

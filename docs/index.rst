@@ -4,10 +4,17 @@
    contain the root `toctree` directive.
 
 API for Reactive Log Processing with focus on AWS!
-=======================================
+==================================================
 
 Lumber-Mill is designed for programmers/devops/SRE etc with a professional programming background but with an emergent
 interest for devops, monitoring and log processing and who want total control of the event pipeline.
+
+Benefits
+
+* Deployed as AWS Lambdas
+* API instead of runtime - complete java8 api
+* No need for plugins, just depend on any third-party library you might need
+
 
 .. code-block:: groovy
 
@@ -47,17 +54,7 @@ Contents:
 
    Home <self>
    five_minute_intro
-   mutate
    sources
+   enrich
    sinks
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
