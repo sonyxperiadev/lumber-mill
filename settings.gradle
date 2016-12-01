@@ -1,6 +1,6 @@
 rootProject.name = 'lumber-mill'
 include 'lumbermill-core',
-        'lumbermill-twitter',
+        'lumbermill-social',
         'lumbermill-geospatial',
     'lumbermill-net',
     'lumbermill-http-server',

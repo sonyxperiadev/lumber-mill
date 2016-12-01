@@ -1,4 +1,4 @@
-package lumbermill.twitter;
+package lumbermill.social;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lumbermill.api.Codecs;

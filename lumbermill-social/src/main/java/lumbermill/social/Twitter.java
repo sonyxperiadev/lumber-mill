@@ -1,4 +1,4 @@
-package lumbermill.twitter;
+package lumbermill.social;
 
 
 import lumbermill.internal.MapWrap;

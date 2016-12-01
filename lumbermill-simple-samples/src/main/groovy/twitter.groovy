@@ -1,5 +1,5 @@
 import lumbermill.Core
-import lumbermill.twitter.Twitter
+import lumbermill.social.Twitter
 
 // Prints the message and name of place if place exists
 
