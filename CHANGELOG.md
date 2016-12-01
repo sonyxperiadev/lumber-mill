@@ -1,6 +1,6 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.22-SNAPSHOT
+### 0.0.22
 
  * Grok support for AWS VPC Flow Logs
  * Support for Geoip2 using maxminds open source databases (http://dev.maxmind.com/geoip/geoip2/geolite2/)
