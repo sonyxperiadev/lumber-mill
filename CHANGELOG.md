@@ -1,5 +1,7 @@
 # Lumber Mill Releases
 
+### [Unreleased / master] Version 0.0.23
+
 ### 0.0.22
 
  * Grok support for AWS VPC Flow Logs
