@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * GZip compression, accessible from Core.gzip
  */
-class GZip {
+public class GZip {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GZip.class);
 

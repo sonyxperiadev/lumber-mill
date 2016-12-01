@@ -23,7 +23,7 @@ import rx.functions.Func1;
 /**
  * Base64 encode and decode, accessible from Code.base64
  */
-class Base64 {
+public class Base64 {
 
     public <T extends Event> Func1<T, Observable<T>> encode() {
         return t -> new BytesEvent(ByteString.decodeBase64(t.raw().base64())).toObservable();

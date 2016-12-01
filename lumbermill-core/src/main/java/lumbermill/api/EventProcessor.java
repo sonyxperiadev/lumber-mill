@@ -25,7 +25,7 @@ import rx.Observable.Transformer;
  * to test.
  *
  */
-public interface EventProcessor<E extends Event> extends Transformer<E, E> {
+public interface EventProcessor<IN extends Event, OUT extends Event> extends Transformer<IN, OUT> {
 
-    Observable<E> call(Observable<E> observable);
+    Observable<OUT> call(Observable<IN> observable);
 }
