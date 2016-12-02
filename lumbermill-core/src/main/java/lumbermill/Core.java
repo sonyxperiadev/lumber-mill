@@ -20,10 +20,7 @@ import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
 import lumbermill.api.RetryStrategy;
-import lumbermill.internal.JsonParseException;
-import lumbermill.internal.MapWrap;
-import lumbermill.internal.RetryStrategyImpl;
-import lumbermill.internal.StringTemplate;
+import lumbermill.internal.*;
 import lumbermill.internal.transformers.ConditionalFunc1;
 
 import org.slf4j.Logger;
@@ -505,7 +502,7 @@ public class Core {
 
     /**
      * Extracts a string value from JsonEvent and merges it with the "parent" event or replaces the current event with
-     * the child event. Note that when merging, any field that already exists will be overwritten so make sure to
+     * the child event. Note that keepWhen merging, any field that already exists will be overwritten so make sure to
      * rename these fields before applying this function if they should be kept.
      *
      * <pre>
@@ -557,7 +554,7 @@ public class Core {
                 return childEvent.toObservable();
             } catch (JsonParseException e) {
                     if (ignoreNonJson) {
-                        LOG.debug("Got json parse when extracting {} from {}", config.asString("field"), jsonEvent.raw().utf8());
+                        LOG.debug("Got json parse keepWhen extracting {} from {}", config.asString("field"), jsonEvent.raw().utf8());
                         return jsonEvent.toObservable();
                     }
                 throw e;
@@ -594,6 +591,17 @@ public class Core {
      */
     public static  Func1<JsonEvent, Observable<AnyJsonEvent>> jsonOfField(String field) {
         return e -> e.has (field) ? e.child(field).withMetaData(e).toObservable() : Observable.empty ();
+    }
+
+
+    public static Func1<Event, Boolean> keepWhen(String strExpression) {
+        final BooleanExpression expression = BooleanExpression.fromString(strExpression);
+        return event -> expression.eval(event);
+    }
+
+    public static Func1<Event, Boolean> skipWhen(String strExpression) {
+        final BooleanExpression expression = BooleanExpression.fromString(strExpression);
+        return event -> !expression.eval(event);
     }
 
 

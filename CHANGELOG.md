@@ -2,6 +2,8 @@
 
 ### [Unreleased / master] Version 0.0.23
 
+* Improved filtering support based on javascript boolean expressions ( *keepWhen("{tags}.contains('_failure')")* )
+
 ### 0.0.22
 
  * Grok support for AWS VPC Flow Logs
