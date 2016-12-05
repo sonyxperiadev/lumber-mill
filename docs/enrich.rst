@@ -228,7 +228,8 @@ To prevent classpath issues, you must exclude jackson dependencies when dependin
 Important, the GeoLite2-City.mmdb **MUST** be downloaded and imported from the project
 that depends on this module, the database in **NOT** included in the distribution.
 
-.. code-block:: guess
+.. code-block:: shell
+
     wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
     gunzip GeoLite2-City.mmdb.gz
 
@@ -236,16 +237,19 @@ that depends on this module, the database in **NOT** included in the distributio
 The database file can be opened from classpath if you make it available there, and this
 is default behaviour.
 
-.. code-block:: guess
+.. code-block:: shell
+
     mv GeoLite2-City.mmdb your_project/src/main/resources
 
 
 Or it can be located somewhere on the filesystem
 
-.. code-block:: guess
+.. code-block:: shell
+
     mv GeoLite2-City.mmdb /tmp
 
 .. code-block:: groovy
+
     geoip (field: 'client_ip', path: '/tmp/GeoLite2-City.mmdb.gz')
 
 
@@ -254,6 +258,7 @@ Or it can be located somewhere on the filesystem
 Simply prepare the image with the maxmind database
 
 .. code-block:: docker
+
     WORKDIR /srv
     RUN wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
     RUN gunzip GeoLite2-City.mmdb.gz
@@ -261,6 +266,7 @@ Simply prepare the image with the maxmind database
 And use it from code
 
 .. code-block:: groovy
+
     geoip (
         'source' : 'client_ip',
         'path'   : '/srv/GeoLite2-City.mmdb'
