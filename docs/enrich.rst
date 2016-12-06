@@ -165,12 +165,18 @@ Filters
 RxJava provides the *observable.filter()* operation that can be used to keep or skip data. Lumber-Mill provides two
 functions that can be used together with filter.
 
-The expression uses JavaScript, so it must be valid javascript and must return a boolean value.
+The expression uses JavaScript, so it must be valid javascript and must return a boolean value but it can be **ANY
+expression in JavaScript**
+
+Some simple examples
 
 .. code-block:: groovy
 
-    // Strings
+    // String equals, Note the quotes!!
     o.filter( keepWhen("'{name}' == 'Johan'"))
+
+    // String contains
+    o.filter( keepWhen("'{message}'.contains('ERROR'")) // Same as str.indexOf(string) != -1
 
     // Numbers
     o.filter( skipWhen("{age} == 99"))
@@ -181,6 +187,8 @@ The expression uses JavaScript, so it must be valid javascript and must return a
     // Array
     o.filter( keepWhen("{tags}.contains('Johan')")
 
+    // combination
+    o.filter( keepWhen("'{name}' == 'Johan' && {isHappy} == true"))
 
 Grok
 ----

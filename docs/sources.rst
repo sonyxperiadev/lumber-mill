@@ -9,3 +9,4 @@ Sources
    Kinesis Consumer Library <kinesis_consumer_source>
    Http Server <http_server_source>
    Twitter <twitter_source>
+   file
