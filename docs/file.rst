@@ -22,7 +22,7 @@ This will create the source Observable and does not "hook" into an existing pipe
     file.readFileAsLines (
             file:  '/tmp/afile',
             codec : Codecs.TEXT_TO_JSON)
-    .filter( keepWhen( '{message}'.contains('ERROR') )
+    .filter( keepWhen( "'{message}'.contains('ERROR')" )
     .doOnNext( console.stdout('Errors: {message}') )
     .subscribe()
 
