@@ -91,9 +91,20 @@ Cloudwatch Logs
 Receiving Cloudwatch Logs events is similar to both S3 and Kinesis. First subclass
 *lumbermill.aws.lambda.CloudWatchLogsLambda*.
 
-The data the is received in the call() method is encoded data which must be decoded, and this
-is done with the *lumbermill.aws.lambda.CloudWatchLogsEventPreProcessor* which will decode, parse
-and denormalize the data into a stream of JsonEvents.
+The data the is received in the call() method is encoded data which must be decoded since it it both compressed and
+Base64 encoded. It looks like this when the *call()* method is invokded.
+
+.. clode-block:: json
+
+    awslogs": {
+        "data": "H4sIAAAAAAAAAHWPwQqCQBCGX0Xm7EFtK+smZBEUgXoLCdMhFtKV3akI8d0bLYmibvPPN3wz00CJxmQnTO41whwWQRIctm
+        EcB6sQbFC3CjW3XW8kxpOpP+OC22d1Wml1qZkQGtoMsScxaczKN3plG8zlaHIta5KqWsozoTYw3/djzwhpLwivWFGHGpAFe7DL68JlBUk
+        l7KSN7tCOEJ4M3/qOI49vMHj+zCKdlFqLaU2ZHV2a4Ct/an0/ivdX8oYc1UVX860fQDQiMdxRQEAAA=="
+        }
+    }
+
+Use *lumbermill.aws.lambda.CloudWatchLogsEventPreProcessor* which will decode, decompress,  parse
+and denormalize the data into a stream of JsonEvents
 
 Each JsonEvent contains the fields
 
@@ -106,6 +117,7 @@ Each JsonEvent contains the fields
 
     import lumbermill.api.Codecs
     import lumbermill.api.JsonEvent
+    import lumbermill.api.EventProcessor
     import lumbermill.aws.lambda.CloudWatchLogsLambda
     import lumbermill.aws.lambda.CloudWatchLogsEventPreProcessor
     import rx.Observable
@@ -117,7 +129,7 @@ Each JsonEvent contains the fields
             super(new DemoLambdaEventProcessor());
         }
 
-        private static class DemoLambdaEventProcessor implements LambdaContextAwareEventProcessor {
+        private static class DemoLambdaEventProcessor implements EventProcessor {
 
             Observable call(Observable observable) {
 
@@ -170,7 +182,7 @@ __________
 
 Cloudtrail events are received from Cloudwatch logs and the raw json is stored in the 'message' field. What we need
 to do is to extract this and convert it to JsonEvent. This will be a separate EventProcessor in next release of Lumber-Mill in
-the same way as with AWS Vpc Flow Logs.
+the same way as with VPC Flow Logs.
 
 .. code-block:: groovy
 
@@ -179,10 +191,11 @@ the same way as with AWS Vpc Flow Logs.
             new CloudWatchLogsEventPreProcessor()
         )
 
-        // Decodes 'message' field and merge new and old event
+        // Decodes 'message' field and merge new and old event, 'message' field is removed since we do not need it anymore.
         .flatMap ({ JsonEvent -> event
-            return Codecs.JSON_OBJECT.from(e.valueAsString('message'))
-                            .merge(e)
+            return Codecs.JSON_OBJECT.from(event.valueAsString('message'))
+                            .merge(event)
+                            .remove('message')
                             .toObservable()})
         .doOnNext(console.stdout())
     }

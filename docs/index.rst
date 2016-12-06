@@ -15,7 +15,6 @@ Benefits
 * API instead of runtime - complete java8 api
 * No need for plugins, just depend on any third-party library you might need
 
-
 .. code-block:: groovy
 
     Observable call(Observable eventStream) {
