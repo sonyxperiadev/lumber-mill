@@ -41,6 +41,10 @@ public abstract class BooleanExpression {
                         "    return false;\n" +
                         "}\n");
 
+                se.eval("String.prototype.contains = function(string) {" +
+                        "    return this.indexOf(string) != -1;\n" +
+                        "}");
+
 
             } catch (ScriptException e) {
                 throw new IllegalStateException(e);

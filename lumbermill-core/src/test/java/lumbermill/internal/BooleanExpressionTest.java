@@ -122,5 +122,19 @@ public class BooleanExpressionTest {
         BooleanExpression booleanExpression = fromString("'{value}' != null");
         assertThat(booleanExpression.eval(TEXT_TO_JSON.from("pelle").put("key", "value"))).isFalse();
     }
+
+    @Test
+    public void testIndexOf() {
+        BooleanExpression booleanExpression = fromString("'{message}'.indexOf('ERROR') != -1");
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("ERROR Nullpointer when trying to...").put("key", "value"))).isTrue();
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("WARN Nullpointer when trying to...").put("key", "value"))).isFalse();
+    }
+
+    @Test
+    public void testPrototypeContains() {
+        BooleanExpression booleanExpression = fromString("'{message}'.contains('ERROR')");
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("ERROR Nullpointer when trying to..."))).isTrue();
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("WARN Nullpointer when trying to..."))).isFalse();
+    }
 }
 

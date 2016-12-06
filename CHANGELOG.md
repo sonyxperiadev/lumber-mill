@@ -3,6 +3,8 @@
 ### [Unreleased / master] Version 0.0.23
 
 * Improved filtering support based on javascript boolean expressions ( *keepWhen("{tags}.contains('_failure')")* )
+* Improved documentation on readthedocs
+* Added string prototype function contains to booleanexpression so you can write keepWhen("'{message}'.contains('ERROR')") 
 
 ### 0.0.22
 
