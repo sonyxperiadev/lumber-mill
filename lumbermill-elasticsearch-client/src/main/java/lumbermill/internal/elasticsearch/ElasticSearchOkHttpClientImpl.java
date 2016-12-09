@@ -277,22 +277,22 @@ public class ElasticSearchOkHttpClientImpl {
 
         Optional<String> formattedType = type.format(event);
         if (!formattedType.isPresent()) {
-            throw new IllegalStateException("Issue with type, could not extract field from event "
-                    + type.original());
+            throw new IllegalStateException("Could not extract type from event "
+                    + type.original()  + ", event: " + event.toString(false));
         }
 
         Optional<String> formattedIndex = index.format(event);
         if (!formattedIndex.isPresent()) {
-            throw new IllegalStateException("Issue with index, could not extract field from event: "
-                    + index.original());
+            throw new IllegalStateException("Could not extract index name from event: "
+                    + index.original() + ", event: " + event.toString(false));
         }
 
         Optional<String> formattedDocumentId = Optional.empty();
         if (documentId.isPresent()) {
             formattedDocumentId = documentId.get().format(event);
             if (!formattedDocumentId.isPresent()) {
-                throw new IllegalStateException("Issue with index, could not extract field from event: "
-                        + index.original());
+                throw new IllegalStateException("Could not extract document_id, from event: "
+                        + index.original() + ", event: " + event.toString(false));
             }
         }
 
