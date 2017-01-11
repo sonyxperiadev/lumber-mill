@@ -113,7 +113,11 @@ public class KinesisClientFactory {
         Regions region = Regions.fromName(configuration.asString("region", "eu-west-1"));
         kinesisClient.setRegion(Region.getRegion(region));
         if (configuration.exists("endpoint")) {
-            kinesisClient.setEndpoint(configuration.asString("endpoint"));
+
+            String endpoint = configuration.asString("endpoint");
+            if (endpoint.length() > 0) {
+                kinesisClient.setEndpoint(endpoint);
+            }
         }
 
 
