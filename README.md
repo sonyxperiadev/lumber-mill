@@ -25,13 +25,13 @@ Maven
 
     <dependency>
           <groupId>com.sonymobile</groupId>
-          <artifactId>lumbermill-aws-lambda</artifactId>
-          <version>0.0.22</version>
+          <artifactId>lumbermill-{module}</artifactId>
+          <version>0.0.23</version>
     </dependency>
 
 Gradle
 
-    compile 'com.sonymobile:lumbermill-aws-lambda:0.0.22'
+    compile 'com.sonymobile:lumbermill-{module}:0.0.23'
     
 ### \*.internal.\*
 

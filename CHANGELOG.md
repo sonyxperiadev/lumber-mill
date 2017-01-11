@@ -1,6 +1,6 @@
 # Lumber Mill Releases
 
-### [Unreleased / master] Version 0.0.23
+### 0.0.23
 
 * Improved filtering support based on javascript boolean expressions ( *keepWhen("{tags}.contains('_failure')")* )
 * Improved documentation on readthedocs
