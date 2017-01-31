@@ -136,5 +136,11 @@ public class BooleanExpressionTest {
         assertThat(booleanExpression.eval(TEXT_TO_JSON.from("ERROR Nullpointer when trying to..."))).isTrue();
         assertThat(booleanExpression.eval(TEXT_TO_JSON.from("WARN Nullpointer when trying to..."))).isFalse();
     }
-}
 
+    @Test
+    public void testPrototypeEndsWith() {
+        BooleanExpression booleanExpression = fromString("'{message}'.endsWith('four')");
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("one two three four"))).isTrue();
+        assertThat(booleanExpression.eval(TEXT_TO_JSON.from("one two three four five"))).isFalse();
+    }
+}

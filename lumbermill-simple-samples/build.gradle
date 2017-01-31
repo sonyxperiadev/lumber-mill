@@ -4,6 +4,7 @@ dependencies {
 
     compile project(':lumbermill-core')
     compile project(':lumbermill-http-server')
+    compile project(':lumbermill-aws')
     compile project(':lumbermill-aws-kcl')
     compile project(':lumbermill-elasticsearch-client')
     compile project(':lumbermill-social')

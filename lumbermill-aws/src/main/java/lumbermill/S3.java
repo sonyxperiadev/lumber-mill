@@ -14,9 +14,7 @@
  */
 package lumbermill;
 
-import lumbermill.api.Codec;
-import lumbermill.api.Codecs;
-import lumbermill.api.Event;
+import lumbermill.api.*;
 import lumbermill.internal.MapWrap;
 import lumbermill.internal.StringTemplate;
 import lumbermill.internal.aws.S3ClientFactory;
@@ -39,6 +37,39 @@ import java.util.Optional;
      
     private Codec<E> defaultEntityCodec = (Codec<E>) Codecs.BYTES;
 
+
+     /**
+      * Polls an S3 bucket for newly created files
+      * <p>
+      * 'bucket', 'prefix' and 'maxConcurrent' are mandatory,
+      * 'notOlderThanInMins' and 'roleArn' are optional
+      *
+      * <pre>
+      * Groovy usage:
+      *  {@code
+      * s3.poll (
+      *     bucket:              'the_bucket',
+      *     prefix:              'the_prefix',
+      *     suffix:              'the_suffix',
+      *     maxConcurrent:       1,
+      *     notOlderThanInMins:  60,
+      *     roleArn:             'the_role_arn'
+      * ).onFile(f -> f.doOnNext(console.stdout())
+      * }
+      * </pre>
+      */
+     public Poll poll(Map<String, Object> config) {
+         MapWrap conf = MapWrap.of(config).assertExists("bucket", "prefix", "maxConcurrent");
+         String bucket   = conf.asStringTemplate("bucket").format().get();
+         String prefix   = conf.asStringTemplate("prefix").format().get();
+         String suffix   = conf.asString("suffix", "");
+
+
+         int max = conf.asInt("maxConcurrent");
+         int notOlderThan = conf.asInt("notOlderThanInMins", 60);
+
+         return clientFactory.create(conf).poll(bucket, prefix, suffix, max, notOlderThan);
+     }
 
     /**
      * Downloads an S3 file locally and appends the path under name 'path'
@@ -146,5 +177,11 @@ import java.util.Optional;
         };
     }
 
+     public interface Poll {
+         void onFile(UnitOfWorkListener unitOfWorkListener);
+     }
 
+     public interface UnitOfWorkListener {
+         Observable<? extends Event> apply(Observable<JsonEvent> observable);
+     }
 }
