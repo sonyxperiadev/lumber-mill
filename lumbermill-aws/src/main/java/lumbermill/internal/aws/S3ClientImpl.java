@@ -14,6 +14,7 @@
  */
 package lumbermill.internal.aws;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -22,6 +23,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import lumbermill.S3;
 import lumbermill.api.Event;
 import lumbermill.internal.Streams;
 import lumbermill.internal.StringTemplate;
@@ -68,11 +70,6 @@ public class S3ClientImpl<T extends Event> {
             awsConfig.setProxyPort(proxy.getPort());
         }
 
-        //awsConfig.setConnectionTimeout(2000);
-        //awsConfig.setRequestTimeout(2000);
-        //awsConfig.setSocketTimeout(2000);
-        //awsConfig.setClientExecutionTimeout(2000);
-
         AWSCredentialsProvider credentials = new DefaultAWSCredentialsProviderChain();
         if (roleArn.isPresent()) {
             credentials = new STSAssumeRoleSessionCredentialsProvider(credentials, roleArn.get(),
@@ -80,6 +77,17 @@ public class S3ClientImpl<T extends Event> {
         }
         s3Client = new AmazonS3Client(credentials, awsConfig);
 
+    }
+
+    /**
+     * Polls an S3 bucket for newly created files.
+     *
+     * It will return an Observable with same contents as incoming event and the location of the
+     * created file under fieldname "key".
+     *
+     */
+    public S3.Poll poll(String bucket, String prefix, String suffix, int max, int notOlderThan) {
+       return new S3ScheduledPoll(s3Client,bucket, prefix, suffix, max, notOlderThan);
     }
 
     /**
@@ -113,13 +121,9 @@ public class S3ClientImpl<T extends Event> {
                         LOGGER.debug("Deleted s3 file s3://{}/{} successfully", sBucket, sKey);
                     }
                 })
-                .doOnUnsubscribe(() -> {
+                .doAfterTerminate(() -> {
                     boolean deleted = file.delete();
-                    LOGGER.debug("OnSubscribe:Deleted local file {} successfully ? {}", file, deleted);
-                })
-                .doOnTerminate(() -> {
-                    boolean deleted = file.delete();
-                    LOGGER.debug("OnTerminate:Deleted local file {} successfully ? {}", file, deleted);
+                    LOGGER.debug("AfterTerminate:Deleted local file {} successfully ? {}", file, deleted);
                 });
     }
 
@@ -178,12 +182,14 @@ public class S3ClientImpl<T extends Event> {
 
         try {
             key = URLDecoder.decode(key, "UTF-8");
+            s3Client.getObject(new GetObjectRequest(bucket, key), file);
         } catch (UnsupportedEncodingException e) {
+            file.delete();
             throw new RuntimeException(e);
+        } catch (AmazonClientException ace) {
+            file.delete();
+            throw ace;
         }
-
-        s3Client.getObject(new GetObjectRequest (
-                bucket, key), file);
         return file;
     }
 

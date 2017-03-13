@@ -28,7 +28,7 @@ import lumbermill.internal.StringTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.subjects.ReplaySubject;
+import rx.subjects.PublishSubject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -197,7 +197,7 @@ public class SimpleRetryableKinesisClient<T extends Event> {
      */
     private  class RequestContext<E extends Event> {
 
-        public final ReplaySubject<List<E>> subject = ReplaySubject.createWithSize(1);
+        public final PublishSubject<List<E>> subject = PublishSubject.create();
 
         /**
          * Keep them here until we are done, then return them

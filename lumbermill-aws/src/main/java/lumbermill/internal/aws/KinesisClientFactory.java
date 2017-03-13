@@ -107,8 +107,8 @@ public class KinesisClientFactory {
 
 
         AmazonKinesisAsync kinesisClient = new AmazonKinesisAsyncClient(getAwsCredentialsProvider(
-                configuration, config), config/*, Executors.newFixedThreadPool(config.getMaxConnections(),
-                new ThreadFactoryBuilder().setNameFormat("lumbermill-async-kinesis-%d").build())*/);
+                configuration, config), config, Executors.newFixedThreadPool(config.getMaxConnections(),
+                new ThreadFactoryBuilder().setNameFormat("lumbermill-async-kinesis-%d").build()));
 
         Regions region = Regions.fromName(configuration.asString("region", "eu-west-1"));
         kinesisClient.setRegion(Region.getRegion(region));
