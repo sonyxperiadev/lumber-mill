@@ -12,6 +12,28 @@ and importing all methods on the lumbermill.Core class.
 
     import static lumbermill.Core.*
 
+Templates
+---------
+
+Templates is a way of extracting values of a field in an Event. In the rest of this page there are many examples that
+makes use of templates so it might be good to explain this concept first.
+
+The most common event to use this function for is JsonEvent but ALL events has metadata and this is also supported
+by templates.
+
+* Metadata and Json root level values can be extracted using the field name.
+
+* When using Json events it is also possible to read nested values using native Jackson json pointers
+(https://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-03).
+
+.. code-block:: groovy
+
+    // Metadata or json root name
+    // {field_name}
+
+    // Value from Json event
+    // {/root/next/leaf}
+
 
 Add / Remove / Rename
 ---------------------

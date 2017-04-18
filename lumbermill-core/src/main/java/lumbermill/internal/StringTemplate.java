@@ -39,7 +39,7 @@ public class StringTemplate {
     private final Logger LOGGER = LoggerFactory.getLogger(StringTemplate.class);
 
     private final String pattern;
-    private final List<SimpleField> fields = new ArrayList<>();
+    private final List<Field> fields = new ArrayList<>();
 
     public StringTemplate(String pattern) {
         this.pattern = pattern;
@@ -68,51 +68,73 @@ public class StringTemplate {
 
     /**
      * Formats the contents from the field according to the contents of the
-     * pattern. This will return Optional.empty() if the pattern contains a field
-     * that is not present in the event.
+     * pattern. This will return Optional.empty() if a field is missing.
      */
     public Optional<String> format(Event event) {
 
         if (fields.size() > 0) {
 
-            String newExpression = pattern;
-            boolean foundField = false;
-            for( SimpleField field : fields) {
-                if (event.has(field.name)) {
-                    newExpression = newExpression.replace (
-                            String.format("{%s}", field.name),
-                            String.format("%s", event.valueAsString(field.name)));
+            // For each Field, everything within {} will be replaced with the actual value but we start with
+            // the raw complete pattern that was supplied
+            String stringToReturn = pattern;
+
+            for( Field field : fields) {
+
+                boolean foundField = false;
+
+                if (event.has(field.nameOrPointer())) {
+                    stringToReturn = stringToReturn.replace (
+                            String.format("{%s}", field.originalExpression()),
+                            String.format("%s", event.valueAsString(field.nameOrPointer())));
                     foundField = true;
-                    newExpression = field.valueOf(newExpression);
+                    stringToReturn = field.valueOf(stringToReturn);
+
                 } else {
-                    String property = System.getProperty(field.name);
+                    String property = System.getProperty(field.nameOrPointer());
                     if (property != null) {
                         foundField = true;
-                        newExpression = newExpression.replace (
-                                String.format("{%s}", field.name),
+                        stringToReturn = stringToReturn.replace (
+                                String.format("{%s}", field.originalExpression()),
                                 String.format("%s", property));
                         if (LOGGER.isTraceEnabled()) {
-                            LOGGER.trace("Value for field {} was found as system property", field.name);
+                            LOGGER.trace("Value for field {} was found as system property", field.nameOrPointer());
                         }
                     } else {
-                        String env = System.getenv(field.name);
+                        String env = System.getenv(field.nameOrPointer());
                         if (env != null) {
                             foundField = true;
-                            newExpression = newExpression.replace(
-                                    String.format("{%s}", field.name),
+                            stringToReturn = stringToReturn.replace(
+                                    String.format("{%s}", field.originalExpression()),
                                     String.format("%s", env));
                             if (LOGGER.isTraceEnabled()) {
-                                LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                                LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
                             }
+                            continue;
+                        }
+
+                        if (field.hasDefault()) {
+                            foundField = true;
+                            stringToReturn = stringToReturn.replace(
+                                    String.format("{%s}", field.originalExpression()),
+                                    String.format("%s", field.defaultValue()));
+                            if (LOGGER.isTraceEnabled()) {
+                                LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
+                            }
+
                         }
                     }
                 }
+
+                if (!foundField) {
+                    LOGGER.trace("Not all fields in pattern was found, returning an empty value");
+                    return Optional.empty();
+                }
             }
 
-            return foundField ?
-                    Optional.of(newExpression) :
-                    Optional.<String>empty();
+            return Optional.of(stringToReturn);
+
         } else {
+            // No fields in pattern, return the pattern.
             return Optional.of(pattern);
         }
     }
@@ -127,57 +149,59 @@ public class StringTemplate {
             return Optional.of(pattern);
         }
 
-        String newExpression = pattern;
-        boolean foundField = false;
-        for( SimpleField field : fields) {
+        String valueToReturn = pattern;
 
+        for( Field field : fields) {
 
-            String property = System.getProperty(field.name);
+            boolean foundField = false;
+
+            String property = System.getProperty(field.nameOrPointer());
             if (property != null) {
                 foundField = true;
-                newExpression = newExpression.replace(
-                        String.format("{%s}", field.expression),
+                valueToReturn = valueToReturn.replace(
+                        String.format("{%s}", field.originalExpression()),
                         String.format("%s", property));
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Value for field {} was found as system property", field.name);
+                    LOGGER.trace("Value for field {} was found as system property", field.nameOrPointer());
                 }
                 continue;
             }
 
-            String env = System.getenv(field.name);
+            String env = System.getenv(field.nameOrPointer());
 
             if (env != null) {
                 foundField = true;
-                newExpression = newExpression.replace(
-                        String.format("{%s}", field.expression),
+                valueToReturn = valueToReturn.replace(
+                        String.format("{%s}", field.originalExpression()),
                         String.format("%s", env));
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                    LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
                 }
                 continue;
             }
 
-            if (field.hasDefault()) {
+            if (!foundField && field.hasDefault()) {
                 foundField = true;
-                newExpression = newExpression.replace(
-                        String.format("{%s}", field.expression),
-                        String.format("%s", field.defaultValue));
+                valueToReturn = valueToReturn.replace(
+                        String.format("{%s}", field.originalExpression()),
+                        String.format("%s", field.defaultValue()));
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Value for field {} was found as system environment variable", field.name);
+                    LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
                 }
 
             }
 
-
+            if (!foundField) {
+                LOGGER.trace("Not all fields in pattern was found, returning an empty value");
+                return Optional.empty();
+            }
 
         }
-        return foundField ?
-                Optional.of(newExpression) :
-                Optional.<String>empty();
+        return Optional.of(valueToReturn);
 
     }
 
-    private void initializeFields(String expression, List<SimpleField> fields) {
+    private void initializeFields(String expression, List<Field> fields) {
 
         int first = expression.indexOf("{");
         int next = expression.indexOf("}");
@@ -197,20 +221,63 @@ public class StringTemplate {
                 '}';
     }
 
-    private static class SimpleField {
 
-        public final String expression;
-        public final String name;
-        public final String defaultValue;
+    interface Field {
+        boolean hasDefault();
+        <T> String  valueOf(T value);
 
-        static SimpleField of(String field) {
+
+        /**
+         * Used nameOrPointer, this is a single field value or a jsonPointer
+         */
+        String nameOrPointer();
+
+
+        /**
+         * Original nameOrPointer, used for replacement
+         */
+        String originalExpression();
+
+        /**
+         * The default value IF any
+         */
+        String defaultValue();
+
+
+        boolean in(Event event);
+    }
+
+    private static class SimpleField implements Field {
+
+        private final String expression;
+        private final String name;
+        private final String defaultValue;
+
+        static Field of(String field) {
             return new SimpleField(field);
+        }
+
+        public String nameOrPointer() {
+            return name;
+        }
+
+        public String originalExpression() {
+            return expression;
+        }
+
+        public String defaultValue() {
+            return defaultValue;
+        }
+
+        @Override
+        public boolean in(Event event) {
+            return event.has(name);
         }
 
         private SimpleField(String name) {
             this.expression = name;
-
             name = name.trim();
+
             if (name.contains("||")) {
                 String[] split = name.split(Pattern.quote("||"));
                 this.name = split[0].trim();

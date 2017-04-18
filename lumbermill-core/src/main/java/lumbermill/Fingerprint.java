@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.Optional;
+
 /**
  * Used to create fingerprints (checksum/hashes) of parts of the contents in Events.
  */
@@ -46,11 +48,16 @@ class Fingerprint {
      * }
      * </pre>
      */
-    public static <E extends Event> Func1<E, Observable<E>> md5(String sourcePattern) {
+    public static <E extends Event> Func1<E, Observable<E>> md5(final String sourcePattern) {
         StringTemplate template = StringTemplate.compile(sourcePattern);
 
         return e -> {
-            String sourceValue = template.format(e).get();
+            Optional<String> stringOptional = template.format(e);
+            if (!stringOptional.isPresent()) {
+                throw new IllegalStateException("All fields in pattern MUST exist when using fingerprint " +
+                        "but at least one was missing: " + sourcePattern);
+            }
+            String sourceValue = stringOptional.get();
             String hashAsHex = Hashing.md5().hashString(sourceValue, Charsets.UTF_8).toString();
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Fingerprint of {} => {}", sourceValue, hashAsHex);

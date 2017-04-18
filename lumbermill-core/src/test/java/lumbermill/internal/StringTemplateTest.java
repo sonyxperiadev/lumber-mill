@@ -53,6 +53,35 @@ public class StringTemplateTest {
         assertThat(formattedString.get()).isEqualTo("value");
     }
 
+
+    @Test
+    public void testExtractNestedSingleValue() {
+        StringTemplate t = StringTemplate.compile("{/key/yes}");
+        JsonEvent event = Codecs.JSON_OBJECT.from("{\"key\":{\"yes\":true}}");
+        Optional<String> formattedString = t.format(event);
+        assertThat(formattedString.isPresent()).isTrue();
+        assertThat(formattedString.get()).isEqualTo("true");
+    }
+
+    @Test
+    public void testExtractNestedDefaultValue() {
+        StringTemplate t = StringTemplate.compile("{/key/yes || false}");
+        JsonEvent event = Codecs.JSON_OBJECT.from("{\"key\":{\"yes\":true}}");
+        Optional<String> formattedString = t.format(event);
+        assertThat(formattedString.isPresent()).isTrue();
+        assertThat(formattedString.get()).isEqualTo("true");
+    }
+
+    @Test
+    public void testExtractNestedDefaultValueNotExist() {
+        StringTemplate t = StringTemplate.compile("{/key/yes || false}");
+        JsonEvent event = Codecs.JSON_OBJECT.from("{\"key\":{\"no\":true}}");
+        Optional<String> formattedString = t.format(event);
+        assertThat(formattedString.isPresent()).isTrue();
+        assertThat(formattedString.get()).isEqualTo("false");
+    }
+
+
     @Test
     public void testExtractSentence() {
         try {
