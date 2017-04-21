@@ -1,5 +1,9 @@
 # Lumber Mill Releases
 
+### 0.0.24
+
+* Support for polling S3 in cases where AWS Lambda is not suitable. Checkout sample.
+
 ### 0.0.23
 
 * Improved filtering support based on javascript boolean expressions ( *keepWhen("{tags}.contains('_failure')")* )
