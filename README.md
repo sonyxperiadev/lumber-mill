@@ -5,6 +5,7 @@
 
 ### Documentation
 * Documentation & Samples at [http://lumber-mill.readthedocs.io/en/latest/](http://lumber-mill.readthedocs.io/en/latest/)
+* Executable & Deployable samples at [https://github.com/sonyxperiadev/lumber-mill-samples](https://github.com/sonyxperiadev/lumber-mill-samples)
 * Checkout some simple runnable samples in the lumbermill-simple-samples module.
 
 ### What is Lumber Mill?
