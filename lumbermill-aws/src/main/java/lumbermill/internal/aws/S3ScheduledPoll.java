@@ -64,6 +64,7 @@ public class S3ScheduledPoll implements S3.Poll {
     private int notOlderThanValue;
 
     private AtomicReference<S3.UnitOfWorkListener> listener = new AtomicReference<>();
+    private AtomicReference<S3.StatsListener> statsListener = new AtomicReference<>();
 
     private Set<S3ObjectSummary> s3ObjectsInPipeline = new HashSet<>();
 
@@ -80,8 +81,15 @@ public class S3ScheduledPoll implements S3.Poll {
     }
 
     @Override
-    public void onFile(S3.UnitOfWorkListener unitOfWorkListener) {
+    public S3.Poll onFile(S3.UnitOfWorkListener unitOfWorkListener) {
         listener.set(unitOfWorkListener);
+        return this;
+    }
+
+    @Override
+    public S3.Poll onStats(S3.StatsListener stats) {
+        statsListener.set(stats);
+        return this;
     }
 
     private void doStart() {
@@ -103,6 +111,11 @@ public class S3ScheduledPoll implements S3.Poll {
                         LOGGER.trace("Polling files under s3://{}/{} available permits: {}", bucket, prefix, lock.availablePermits());
 
                         List<S3ObjectSummary> objectSummaries = list(Optional.empty());
+
+                        S3.StatsListener sl = statsListener.get();
+                        if (sl != null) {
+                            sl.apply(Observable.just(objectSummaries::size));
+                        }
 
                         if (objectSummaries.size() == 0) {
                             LOGGER.trace("No files found");
