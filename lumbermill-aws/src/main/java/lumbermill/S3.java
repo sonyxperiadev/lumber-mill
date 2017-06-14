@@ -178,10 +178,19 @@ import java.util.Optional;
     }
 
      public interface Poll {
-         void onFile(UnitOfWorkListener unitOfWorkListener);
+         Poll onFile(UnitOfWorkListener unitOfWorkListener);
+         Poll onStats(StatsListener statsListener);
      }
 
      public interface UnitOfWorkListener {
          Observable<? extends Event> apply(Observable<JsonEvent> observable);
+     }
+
+     public interface S3Stats {
+        int numberOfPendingFiles();
+     }
+
+     public interface StatsListener {
+         void apply(Observable<S3Stats> observable);
      }
 }

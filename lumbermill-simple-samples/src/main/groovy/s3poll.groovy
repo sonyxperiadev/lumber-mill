@@ -29,3 +29,4 @@ s3.poll(
             .doOnNext({a -> Thread.sleep(8000)}) // Simulates long processing...
             .doOnNext({a -> println "done sleeping"})
 }
+.onStats { f -> f.forEach { s -> logger.info("Pending files: " + s.numberOfPendingFiles()) } }
