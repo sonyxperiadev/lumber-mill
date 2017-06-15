@@ -1,5 +1,10 @@
 # Lumber Mill Releases
 
+### 0.0.25
+
+* S3 Poll: Allows the client to fetch metrics. Currently limited to pending files.
+* Bumbed AWS SDK version to 1.11.143
+
 ### 0.0.24
 
 * Support for polling S3 in cases where AWS Lambda is not suitable. Checkout sample.

@@ -27,12 +27,12 @@ Maven
     <dependency>
           <groupId>com.sonymobile</groupId>
           <artifactId>lumbermill-{module}</artifactId>
-          <version>0.0.24</version>
+          <version>0.0.25</version>
     </dependency>
 
 Gradle
 
-    compile 'com.sonymobile:lumbermill-{module}:0.0.24'
+    compile 'com.sonymobile:lumbermill-{module}:0.0.25'
     
 ### \*.internal.\*
 
