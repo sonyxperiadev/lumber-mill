@@ -9,13 +9,26 @@ Java samples are prefixed with J since they seems to conflict with groovy files.
 
 You can run the samples in here with docker just to try them out
 
+    docker run jrask/lumbermill:latest
+
+### Influxdb
+
+Start Influx database
+
+    docker run -rm --name influxdb influxdb
+
+Run Lumber-Mill
+
+    docker run --link influxdb jrask/lumbermill influxdb.groovy
+
+
 ### Kinesis Consumer
 
 ```
 docker run --rm \ 
  -e streamName=<streamName> \ 
  -v ~/.aws:/root/.aws \
- lifelog/lumber-mill kcl.groovy
+ jrask/lumbermill kcl.groovy
 ```
 
 You can also add the following parameters

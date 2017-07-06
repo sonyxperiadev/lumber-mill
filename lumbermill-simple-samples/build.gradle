@@ -9,6 +9,7 @@ dependencies {
     compile project(':lumbermill-elasticsearch-client')
     compile project(':lumbermill-social')
     compile project(':lumbermill-geospatial')
+    compile project(':lumbermill-influxdb')
     compile 'ch.qos.logback:logback-classic:1.1.6'
     compile 'ch.qos.logback:logback-core:1.1.6'
 }

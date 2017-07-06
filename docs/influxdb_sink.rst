@@ -27,24 +27,28 @@ Stores metrics in influxdb.
 
 .. code-block:: groovy
 
-    import lumbermill.api.Codecs.*
-    import static lumbermill.influxdb.Influxdb
+   import lumbermill.api.Codecs
+   import java.util.concurrent.TimeUnit
+   import static lumbermill.Influxdb.influxdb
 
-    Codecs.JSON_OBJECT.from(json).toObservable()
-      .flatMap ( influxdb.client (
-            url         : 'http://host:port', //Required
-            user        : 'root',             //Required
-            password    : 'root',             // Required
-            db          : 'dbName',           // Required, supports templating
-            measurement : '{metric}',         // Required, supports templating
-            fields      : [
-                 // value should be the name of the field, template not supported to support correct type (WIP)
-                'avg'  : 'avg',
-                'max'  : 'max',
-            ],
-            excludeTags : ['@timestamp', 'device_name', 'metric'],
-            time        : 'time'                // Optional, override @timestamp field. First checks time and fallbacks to @timestamp if not exists
-            precision   : TimeUnit.MILLISECONDS // Optional (default MS), precision of the time field
-        )
-    ).toBlocking()
-    .subscribe()
+   client = influxdb.client (
+           url         : 'http://influxdb:8086', //Required
+           user        : 'root',             //Required
+           password    : 'root',             // Required
+           db          : 'testDb',           // Required, supports templating
+           measurement : '{metric}',         // Required, supports templating
+           fields      : [
+                   // value should be the name of the field, template not supported to support correct type (WIP)
+                   'avg'  : 'avg',
+                   'max'  : 'max',
+           ],
+           excludeTags : ['@timestamp', 'message'],
+           precision   : TimeUnit.MILLISECONDS // Optional (default MS), precision of the time field
+   )
+
+   rx.Observable.just(json)
+           .buffer(2)
+           .flatMap (client)
+           .toBlocking()
+           .subscribe()
+

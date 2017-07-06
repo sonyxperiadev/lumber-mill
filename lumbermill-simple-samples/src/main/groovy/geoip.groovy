@@ -5,7 +5,7 @@ import static lumbermill.Core.console
 import static lumbermill.geospatial.GeoSpatial.geoip
 
 /*
-   Run this with 'docker run lifelog/lumber-mill:latest geoip.groovy'
+   Run this with 'docker run jrask/lumbermill:latest geoip.groovy'
 */
 
 Observable.just(
