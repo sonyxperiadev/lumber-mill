@@ -22,12 +22,13 @@ def logger = LoggerFactory.getLogger('lumbermill.docker')
 
 logger.info("Welcome to lumber-mill with docker!")
 logger.info("Available samples:")
-logger.info("docker run --rm lifelog/lumber-mill grok.groovy")
-logger.info("docker run --rm lifelog/lumber-mill geoip.groovy")
+logger.info("docker run --rm jrask/lumbermill grok.groovy")
+logger.info("docker run --rm jrask/lumbermill geoip.groovy")
+logger.info("docker run --rm --link influxdb jrask/lumbermill influxdb.groovy")
 logger.info("##")
 logger.info("To run your own file by specifying the volume:")
-logger.info("docker run --rm -v ABSOLUTE_PATH:/samples lifelog/lumber-mill /samples/yourfile.groovy")
+logger.info("docker run --rm -v ABSOLUTE_PATH:/samples jrask/lumbermill /samples/yourfile.groovy")
 logger.info("I.e, run grok from volume (if run from lumber-mill root directory):")
-logger.info("docker run --rm -v \$(pwd)/lumbermill-simple-samples/src/main/groovy:/samples lifelog/lumber-mill /samples/grok.groovy")
+logger.info("docker run --rm -v \$(pwd)/lumbermill-simple-samples/src/main/groovy:/samples jrask/lumbermill /samples/grok.groovy")
 
 

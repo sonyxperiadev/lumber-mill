@@ -84,7 +84,7 @@ public class InfluxDBClient {
             Observable.from(events)
                     .groupBy(e -> dbTemplate.format(e).get())
                     .flatMap(byDatabase -> ensureDatabaseExists (influxDB, byDatabase))
-                    .doOnNext(byDatabase ->
+                    .flatMap(byDatabase ->
                         byDatabase
                                 .flatMap(jsonEvent -> buildPoint(config, measurementTemplate, jsonEvent))
                                 .buffer(config.asInt("flushSize", 100))
