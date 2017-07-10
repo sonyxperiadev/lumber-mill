@@ -1,5 +1,10 @@
 # Lumber Mill Releases
 
+
+### 0.0.26
+
+* Influxdb bug where nothing was stored.
+
 ### 0.0.25
 
 * S3 Poll: Allows the client to fetch metrics. Currently limited to pending files.
