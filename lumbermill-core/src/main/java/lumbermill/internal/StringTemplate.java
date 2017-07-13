@@ -118,7 +118,7 @@ public class StringTemplate {
                                     String.format("{%s}", field.originalExpression()),
                                     String.format("%s", field.defaultValue()));
                             if (LOGGER.isTraceEnabled()) {
-                                LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
+                                LOGGER.trace("Value for field {} got a default value", field.nameOrPointer());
                             }
 
                         }
@@ -186,7 +186,7 @@ public class StringTemplate {
                         String.format("{%s}", field.originalExpression()),
                         String.format("%s", field.defaultValue()));
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Value for field {} was found as system environment variable", field.nameOrPointer());
+                    LOGGER.trace("Value for field {} got a default value", field.nameOrPointer());
                 }
 
             }

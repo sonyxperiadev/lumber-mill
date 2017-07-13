@@ -19,7 +19,7 @@ Templates is a way of extracting values of a field in an Event. In the rest of t
 makes use of templates so it might be good to explain this concept first.
 
 The most common event to use this function for is JsonEvent but ALL events has metadata and this is also supported
-by templates.
+by templates. It also has support for default values if no value for a name or pointer exists by separating with ||.
 
 * Metadata and Json root level values can be extracted using the field name.
 
@@ -31,8 +31,14 @@ by templates.
     // Metadata or json root name
     // {field_name}
 
+    // With a default value
+    // {field_name || someDefaultValue}
+
     // Value from Json event
     // {/root/next/leaf}
+
+    // Value from Json event with default value
+    // {/root/next/leaf || someDefaultValue}
 
 
 Add / Remove / Rename
