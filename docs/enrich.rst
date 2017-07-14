@@ -12,6 +12,54 @@ and importing all methods on the lumbermill.Core class.
 
     import static lumbermill.Core.*
 
+Templates
+---------
+
+
+Templates is a way of extracting values of a field in an Event. In the rest of this page there are many examples that
+makes use of templates so it might be good to explain this concept first.
+
+The most common event to use this function for is JsonEvent but ALL events has metadata and this is also supported
+by templates. It also has support for default values if no value for a name or pointer exists by separating with ||.
+
+* Metadata and Json root level values can be extracted using the field name.
+
+* When using Json events it is also possible to read nested values using native Jackson json pointers (https://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-03).
+
+.. code-block:: groovy
+
+    // Metadata or json root name
+    // '{field_name}'
+
+    // With a default value
+    // {field_name || someDefaultValue}
+
+    // Value from Json event
+    // {/root/next/leaf}
+
+    // Value from Json event with default value
+    // '{/root/next/leaf || someDefaultValue}'
+
+    // Multiple expressions in one
+    // 'Hi my name is {/root/person/firstname || John} {/root/person/lastname || Doe}'
+
+This will not only look in the currently processed event, it not it does not exist there it will look if there is a system
+property (System.getProperty()) and after that it will check if there is an environment variable with that name. This is of course
+only true for field names, and not for JsonPointers.
+
+
+It is also possible to use templates for reading system properties and environment variables when creating functions (source, enrich & sink).
+
+.. code-block:: groovy
+
+    s3.poll(
+        // Read property or sysenv to override defaults
+        bucket: "{S3_POLL_BUCKET || my_dev_s3bucket}",
+        prefix: "{S3_PREFIX || files/}",
+        maxConcurrent: 2,
+        notOlderThanInMins: 60
+    )
+
 
 Add / Remove / Rename
 ---------------------

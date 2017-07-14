@@ -18,15 +18,14 @@ import lumbermill.api.Codecs;
 import lumbermill.api.Event;
 import lumbermill.api.JsonEvent;
 import org.junit.Test;
+import rx.Subscriber;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
-import static lumbermill.Core.addField;
-import static lumbermill.Core.computeIfExists;
-import static lumbermill.Core.date;
-import static lumbermill.Core.fingerprint;
-import static lumbermill.Core.params;
+import static lumbermill.Core.*;
 import static lumbermill.internal.MapWrap.of;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -133,33 +132,49 @@ public class CoreTest {
     }
 
     @Test
-    public void test_checksum_does_not_match_when_field_is_missing_in_one() {
-        JsonEvent jsonEvent  = Codecs.TEXT_TO_JSON.from("Hello");
-        JsonEvent jsonEvent2 = Codecs.TEXT_TO_JSON.from("Hello").put("data", "data");
+    public void test_checksum_exception_is_thrown_when_field_is_missing_in_one() {
 
-        jsonEvent.toObservable().flatMap (fingerprint.md5("{message}{data}")).subscribe();
+        AtomicReference<Throwable> expected = new AtomicReference<>();
 
-        jsonEvent2.toObservable().flatMap (fingerprint.md5("{message}{data}")).subscribe();
+        rx.Observable.<Event>merge(
+                Codecs.TEXT_TO_JSON.from("Hello").toObservable(),
+                Codecs.TEXT_TO_JSON.from("Hello").put("data", "data").toObservable())
+                .flatMap (fingerprint.md5("{message}{data}"))
+                .buffer(2)
+                .doOnNext(events -> assertThat(events.get(0).valueAsString("fingerprint")).
+                        isNotEqualTo(events.get(1).valueAsString("fingerprint")))
+                .subscribe(new Subscriber<List<Event>>() {
+                    @Override
+                    public void onCompleted() {
 
-        assertThat(jsonEvent.valueAsString("fingerprint"))
-                .isNotEqualTo(
-                        jsonEvent2.valueAsString("fingerprint"));
+                    }
 
+                    @Override
+                    public void onError(Throwable e) {
+                        expected.set(e);
+                    }
+
+                    @Override
+                    public void onNext(List<Event> events) {
+
+                    }
+                });
+        assertThat(expected.get()).isNotNull();
+        assertThat(expected.get().getClass()).isEqualTo(IllegalStateException.class);
     }
 
     @Test
     public void test_checksum_should_not_match() {
 
-        JsonEvent jsonEvent  = Codecs.TEXT_TO_JSON.from("Hello").put("data", "world");
-        JsonEvent jsonEvent2 = Codecs.TEXT_TO_JSON.from("Hello").put("data", "World");
+        rx.Observable.<Event>merge(
+                Codecs.TEXT_TO_JSON.from("Hello").put("data", "world").toObservable(),
+                Codecs.TEXT_TO_JSON.from("Hello").put("data", "World").toObservable())
 
-        jsonEvent.toObservable().flatMap (fingerprint.md5("{message}{data}")).subscribe();
-
-        jsonEvent2.toObservable().flatMap (fingerprint.md5("{message}{data}")).subscribe();
-
-        assertThat(jsonEvent.valueAsString("fingerprint"))
-                .isNotEqualTo(
-                        jsonEvent2.valueAsString("fingerprint"));
+                .flatMap (fingerprint.md5("{message}{data}"))
+                .buffer(2)
+                .doOnNext(events -> assertThat(events.get(0).valueAsString("fingerprint")).
+                        isNotEqualTo(events.get(1).valueAsString("fingerprint")))
+                .subscribe();
 
     }
 }

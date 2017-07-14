@@ -23,14 +23,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import okio.ByteString;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents a Json Object(!)
@@ -93,15 +88,15 @@ public class JsonEvent extends MetaDataEvent {
     }
 
     public long asLong(String field) {
-        return jsonNode.get(field).asLong();
+        return getNodeWithErrorIfNotExists(field).asLong();
     }
 
     public double asDouble(String field) {
-        return jsonNode.get(field).asDouble();
+        return getNodeWithErrorIfNotExists(field).asDouble();
     }
 
     public Boolean asBoolean(String field) {
-        return jsonNode.get(field).asBoolean();
+        return getNodeWithErrorIfNotExists(field).asBoolean();
     }
 
     public JsonEvent putMetaData(String key, Object value) {
@@ -119,9 +114,14 @@ public class JsonEvent extends MetaDataEvent {
 
     @Override
     public String valueAsString(String field) {
-        if (this.jsonNode.has(field)) {
 
-            JsonNode node = jsonNode.get(field);
+        Optional<JsonNode> nodeOptional = getNode(field);
+
+
+
+        if (nodeOptional.isPresent()) {
+
+            JsonNode node = nodeOptional.get();
 
             // TODO: This should find another home
             // Support for boolean expressions of arrays
@@ -137,17 +137,15 @@ public class JsonEvent extends MetaDataEvent {
                 return sb.append("]").toString();
             }
 
-            if (node == null) {
-                return null;
-            }
-
             return node.asText();
         }
+
         return super.valueAsString(field);
     }
 
+
     public boolean has(String field) {
-        return jsonNode.has(field) ? true : super.has(field);
+        return getNode(field).isPresent() ? true : super.has(field);
     }
 
     @Override
@@ -308,6 +306,19 @@ public class JsonEvent extends MetaDataEvent {
         } else {
             jsonNode.put(key, String.valueOf(o));
         }
+    }
+
+    private JsonNode getNodeWithErrorIfNotExists(String fieldOrPointer) {
+        Optional<JsonNode> node = getNode(fieldOrPointer);
+        if (!node.isPresent()) {
+            throw new IllegalStateException("No value found for json field/pointer: " + fieldOrPointer);
+        }
+        return node.get();
+    }
+
+    private Optional<JsonNode> getNode(String nameOrJsonPointer)  {
+        JsonNode node =  nameOrJsonPointer.startsWith("/") ? jsonNode.at(nameOrJsonPointer) : jsonNode.get(nameOrJsonPointer);
+        return (node != null && !node.isMissingNode()) ? Optional.of(node) : Optional.empty();
     }
 
     public AnyJsonEvent child(String field) {
