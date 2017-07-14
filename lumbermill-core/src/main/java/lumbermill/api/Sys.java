@@ -1,7 +1,8 @@
 package lumbermill.api;
 
-import static java.lang.String.format;
-import static java.lang.String.valueOf;
+import lumbermill.internal.StringTemplate;
+
+import java.util.Optional;
 
 public class Sys {
 
@@ -10,31 +11,31 @@ public class Sys {
   }
 
   public static Env env (String name) {
-    String value =  System.getenv (name) != null ? System.getenv (name) : null;
-    if (value != null) {
-      return new Env(value);
-    }
-    throw new IllegalStateException (format("No System env found for name %s", name));
+    return new Env(name);
   }
 
   public static class Env {
 
-    private final String value;
+    private final StringTemplate value;
 
     Env (String value) {
-      this.value = value;
+      this.value = StringTemplate.compile(value);
     }
 
     public String string() {
-      return value;
+      Optional<String> stringOptional = value.format();
+      if (stringOptional.isPresent()) {
+        return stringOptional.get();
+      }
+      throw new IllegalStateException("No environment variable found for " + value.original());
     }
 
     public boolean bool() {
-      return Boolean.valueOf (value);
+      return Boolean.valueOf (string());
     }
 
     public int number() {
-      return Integer.parseInt (value);
+      return Integer.parseInt (string());
     }
 
   }

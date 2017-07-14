@@ -57,8 +57,24 @@ It is also possible to use templates for reading system properties and environme
         bucket: "{S3_POLL_BUCKET || my_dev_s3bucket}",
         prefix: "{S3_PREFIX || files/}",
         maxConcurrent: 2,
-        notOlderThanInMins: 60
+        notOlderThanInMins: 60 // See next section how to read this as environment variable
     )
+
+NOTE: This currently only support String, if you need numbers or booleans read the next section abut "Reading environment variables".
+
+
+Reading environment variables
+-----------------------------
+
+The approach above is only possible when using lumbermill functions with String types which does not always work. However,
+using a number or boolean or a completely separate instance of something is common.
+
+.. code-block:: groovy
+
+    new MyThirdPartyThing(
+        env ('{HOST || localhost').string(),
+        env ('{PORT || 8080').number(),
+        env ('{CREATE || false').bool())
 
 
 Add / Remove / Rename
