@@ -164,6 +164,30 @@ public class S3ClientImpl<T extends Event> {
                 new ByteArrayInputStream(raw.toByteArray()), metadata);
     }
 
+    /**
+     * Copies an object between locations in S3
+     *
+     * @param event
+     * @param sourceBucketName
+     * @param sourceKey
+     * @param destinationBucketName
+     * @param destinationKey
+     */
+    public void copyObject(T event,
+                           StringTemplate sourceBucketName,
+                           StringTemplate sourceKey,
+                           StringTemplate destinationBucketName,
+                           StringTemplate destinationKey) {
+
+        String srcBucket = sourceBucketName.format(event).get();
+        String srcKey = sourceKey.format(event).get();
+        String dstBucket = destinationBucketName.format(event).get();
+        String dstKey = destinationKey.format(event).get();
+
+        LOGGER.trace("Copying from s3://{}/{} to s3://{}/{}", srcBucket, srcKey, dstBucket, dstKey);
+
+        s3Client.copyObject(srcBucket, srcKey, dstBucket, dstKey);
+    }
 
     public ByteString getAsBytes(String bucket, String key) {
         return Streams.read(get(bucket, key));
