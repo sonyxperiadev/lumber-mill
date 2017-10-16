@@ -177,6 +177,42 @@ import java.util.Optional;
         };
     }
 
+     /**
+      * Copies an object from one S3 location to another
+      * <p>
+      * 'src_bucket', 'src_key', 'dest_bucket', 'dest_key' are mandatory, 'roleArn' is optional
+      *
+      * <pre>
+      * Groovy usage:
+      *  {@code
+      * observable.flatMap (
+      *     s3.copy (
+      *         src_bucket:   'the_source_bucket',
+      *         src_key:      'the_source_key',
+      *         dst_bucket:   'the_destination_bucket',
+      *         dst_key:      'the_destination_key',
+      *         roleArn:      'the_role_arn'
+      *     )
+      * )
+      * }
+      * </pre>
+      */
+     public <T extends Event> Func1<T, Observable<T>>copy(Map<String, Object> config) {
+
+         MapWrap conf = MapWrap.of(config).assertExists("src_bucket", "src_key", "dst_bucket", "dst_key");
+         StringTemplate srcBucket = conf.asStringTemplate("src_bucket");
+         StringTemplate srcKey    = conf.asStringTemplate("src_key");
+         StringTemplate dstBucket = conf.asStringTemplate("dst_bucket");
+         StringTemplate dstKey    = conf.asStringTemplate("dst_key");
+
+         S3ClientImpl client = clientFactory.create(conf);
+
+         return t -> {
+             client.copyObject(t, srcBucket, srcKey, dstBucket, dstKey);
+             return Observable.just(t);
+         };
+     }
+
      public interface Poll {
          Poll onFile(UnitOfWorkListener unitOfWorkListener);
          Poll onStats(StatsListener statsListener);
