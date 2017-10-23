@@ -72,9 +72,9 @@ using a number or boolean or a completely separate instance of something is comm
 .. code-block:: groovy
 
     new MyThirdPartyThing(
-        env ('{HOST || localhost').string(),
-        env ('{PORT || 8080').number(),
-        env ('{CREATE || false').bool())
+        env ('{HOST || localhost'}).string(),
+        env ('{PORT || 8080'}).number(),
+        env ('{CREATE || false'}).bool())
 
 
 Add / Remove / Rename
