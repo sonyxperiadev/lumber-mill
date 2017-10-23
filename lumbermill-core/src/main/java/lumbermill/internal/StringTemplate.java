@@ -51,17 +51,17 @@ public class StringTemplate {
     }
 
     public static StringTemplate compile(String pattern) {
-        if (!hasFields(pattern)) {
+        if (!hasPattern(pattern)) {
             return new NoFieldsTemplate(pattern);
         }
         return new StringTemplate(pattern);
     }
 
-    private static boolean hasFields(String pattern) {
-        return new StringTemplate(pattern).hasFields();
+    public static boolean hasPattern(String pattern) {
+        return new StringTemplate(pattern).hasPattern();
     }
 
-    private boolean hasFields() {
+    private boolean hasPattern() {
         return fields.size() > 0;
     }
 
