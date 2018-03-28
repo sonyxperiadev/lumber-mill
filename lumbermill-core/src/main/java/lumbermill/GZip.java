@@ -87,4 +87,15 @@ public class GZip {
             return Codecs.BYTES.from(Streams.gunzip(t.raw())).withMetaData(t).toObservable();
         };
     }
+
+    public  <T extends Event>Func1<T, Observable<T>> tryDecompress(){
+        return t -> {
+            try {
+                return Codecs.BYTES.from(Streams.gunzip(t.raw())).withMetaData(t).toObservable();
+            } catch (RuntimeException e) {
+                LOGGER.trace("Could not decompress event, returning original");
+                return Observable.just(t);
+            }
+        };
+    }
 }
