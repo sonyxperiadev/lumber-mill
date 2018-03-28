@@ -1,6 +1,9 @@
 build
+.classpath
 .idea
 .gradle
+.project
+.settings
 *.iml
 .vertx/
 local.properties
