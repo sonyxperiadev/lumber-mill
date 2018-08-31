@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/sonyxperiadev/lumber-mill.svg?branch=master)](https://travis-ci.org/sonyxperiadev/lumber-mill) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.sonymobile/lumbermill-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.sonymobile/lumbermill-core)
 # Lumber Mill
 
-*Lumber Mill is under heavy development/refactoring so expect api changes to occur*
+**Project is not under development anymore**
 
 ### Documentation
 * Documentation & Samples at [http://lumber-mill.readthedocs.io/en/latest/](http://lumber-mill.readthedocs.io/en/latest/)
